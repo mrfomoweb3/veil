@@ -1,0 +1,28 @@
+[package]
+name = "veil-engine-outlayer"
+description = "The VEIL engine as an OutLayer WASI P2 project. Build with scripts/build-engine.sh."
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+build = "build.rs"
+
+# Its own workspace: this only builds for wasm32-wasip2.
+[workspace]
+
+[[bin]]
+name = "veil-engine"
+path = "src/main.rs"
+
+[dependencies]
+veil-engine = { path = "..", default-features = false }
+outlayer = { version = "0.2", features = ["encryption-keys"] }
+wasi-http-client = "0.2"
+getrandom = "0.3"
+serde_json = "1"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "debuginfo"

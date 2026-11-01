@@ -1,0 +1,240 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useStore } from '../store';
+import { useMatchSync, seatName } from '../game/sync';
+import { available, clickTile, fmtHex, moveTargets, removeMove, sendOrders, setMoveCount, setRecruit, spent } from '../game/actions';
+import { World } from '../scene/World';
+import { Islands } from '../scene/Islands';
+import { FogClouds } from '../scene/Sky';
+import { BattleMarks, OrderArcs, Ring, RumoredCapitals, TroopChips } from '../scene/Overlay';
+import { tilesFromView } from '../scene/tiles';
+import { seatColor } from '../scene/palette';
+import { Board, inferCapitals } from '../protocol/hex';
+import { DEFENSE, INCOME, TERRAIN_NAMES } from '../protocol/view';
+import { FORT_COST, MAX_RECRUIT, SCOUT_COST } from '../protocol/orders';
+import { rotateViewKey } from '../session';
+import { AttestSheet } from './Attest';
+
+function useNow(ms = 250) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), ms); return () => clearInterval(t); }, [ms]);
+  return now;
+}
+
+export function MatchScreen() {
+  useMatchSync();
+  const s = useStore();
+  const { chain, match, view, memory, draft, selected, facts } = s;
+  const [hover, setHover] = useState<number | null>(null);
+  const tiles = useMemo(() => (view ? tilesFromView(view, memory) : []), [view, memory]);
+  const board = useMemo(() => (view ? new Board(view.radius) : null), [view]);
+  const me = view?.me ?? null;
+  const capPos = view && tiles[view.capital] ? tiles[view.capital].pos : ([0, 0, 0] as [number, number, number]);
+  const capitals = useMemo(() => (view && board ? inferCapitals(view.radius, view.seats.length, view.me, board.hex(view.capital)) : []), [view, board]);
+  const lastBattles = facts.length ? facts[facts.length - 1].battles : [];
+  const targets = selected != null ? moveTargets(selected) : [];
+
+  if (!chain) return null;
+  const seated = match?.seats.find((x) => x.account === chain.account);
+
+  return (
+    <div className="screen match">
+      {view && board ? (
+        <World focus={capPos} distance={15} onMiss={() => s.set({ selected: null })}>
+          <Islands tiles={tiles} onTile={clickTile} onHover={setHover} />
+          <FogClouds tiles={tiles} onTile={clickTile} />
+          <TroopChips tiles={tiles} me={me} />
+          <OrderArcs tiles={tiles} board={board} orders={draft} color={seatColor(me)} solid={s.submittedTurn === match?.turn} />
+          <BattleMarks tiles={tiles} board={board} battles={lastBattles} />
+          <RumoredCapitals tiles={tiles} board={board} capitals={capitals} alive={view.seats.map((x) => x.alive)} me={view.me} />
+          {selected != null && <Ring pos={tiles[selected].pos} color="#ffffff" pulse />}
+          {targets.map((i) => <Ring key={i} pos={tiles[i].pos} color={seatColor(me)} radius={0.8} />)}
+          {hover != null && hover !== selected && <Ring pos={tiles[hover].pos} color="#ffffff" radius={0.9} />}
+        </World>
+      ) : (
+        <div className="veil-wait">
+          <div className="spinner" />
+          <p>{match?.status === 'Lobby' ? 'Waiting in the lobby…' : 'The enclave is raising the islands. Nobody — not even us — will see the map.'}</p>
+        </div>
+      )}
+
+      <TopBar />
+      {match?.status === 'Lobby' && <LobbyPanel />}
+      {view && match && ['Running', 'Resolving'].includes(match.status) && view.alive && seated && <OrdersPanel />}
+      {view && <TileInfo index={hover ?? selected} tiles={tiles} board={board} />}
+      <Feed />
+      {match && ['Finished', 'Revealing', 'Revealed'].includes(match.status) && <EndPanel />}
+      {view && !view.alive && match?.status === 'Running' && <div className="banner bad">Your capital has fallen. Watch the war unfold — The Reveal will show you everything.</div>}
+      {seated?.autopilot && <div className="banner">You missed 3 turns, so a warlord is holding your seat. <button className="small" onClick={() => chain.call('claim_seat_back', { match_id: match!.id })}>Take it back</button></div>}
+      {s.error && (
+        <div className="banner bad">
+          {s.error}{' '}
+          <button className="small" onClick={async () => { const { pkHex } = rotateViewKey(chain.account); await chain.call('rotate_view_pk', { match_id: match!.id, view_pk: pkHex }); s.set({ error: 'New key registered. Your next view will open with it.' }); }}>Re-key</button>
+        </div>
+      )}
+      {s.attestTurn != null && <AttestSheet />}
+    </div>
+  );
+}
+
+function TopBar() {
+  const { match, view, chain, history, set } = useStore();
+  const now = useNow();
+  if (!match || !chain) return null;
+  const left = Math.max(0, match.deadline_ms - now);
+  const frac = match.turn_len_ms ? left / match.turn_len_ms : 0;
+  return (
+    <header className="topbar hud">
+      <button className="ghost" onClick={() => { useStore.getState().resetMatch(); set({ screen: 'lobby', matchId: null }); }}>←</button>
+      <div className="title">
+        <b>Match #{match.id}</b>
+        <span className="muted">{match.status === 'Running' || match.status === 'Resolving' ? `Turn ${match.turn} / ${match.max_turns}` : match.status}</span>
+      </div>
+      {match.status === 'Running' && (
+        <div className="timer" title="Time left this turn">
+          <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" className="track" /><circle cx="18" cy="18" r="15" className="bar" style={{ strokeDasharray: `${94.2 * frac} 94.2` }} /></svg>
+          <span>{Math.ceil(left / 1000)}s</span>
+        </div>
+      )}
+      {match.status === 'Resolving' && <div className="resolving">resolving in the enclave…</div>}
+      <div className="score">
+        {match.seats.map((seat, i) => (
+          <div key={i} className={`seat ${seat.alive ? '' : 'dead'} ${seat.account === chain.account ? 'me' : ''}`} style={{ ['--c' as string]: seatColor(i) }} title={seat.account}>
+            <i />{seatName(match, i, chain.account)} <b>{view?.seats[i]?.tiles ?? '–'}</b>
+          </div>
+        ))}
+      </div>
+      <div className="shields" title="Every turn's proof. Click to inspect.">
+        {history.map((h) => (
+          <button key={h.turn} className="shield" onClick={() => set({ attestTurn: h.turn })}>⛨<sub>{h.turn}</sub></button>
+        ))}
+      </div>
+    </header>
+  );
+}
+
+function LobbyPanel() {
+  const { match, chain } = useStore();
+  if (!match || !chain) return null;
+  const host = match.host === chain.account;
+  return (
+    <div className="panel float-center">
+      <h2>Lobby #{match.id}</h2>
+      <p>{match.seats.length} human{match.seats.length === 1 ? '' : 's'} seated, {match.ai_seats} warlord{match.ai_seats === 1 ? '' : 's'} reserved, {match.max_seats} seats.</p>
+      <ul className="plain">{match.seats.map((x) => <li key={x.account}>{x.account}</li>)}</ul>
+      {host ? <button className="primary" onClick={() => chain.call('start', { match_id: match.id })}>Start now (empty seats become warlords)</button> : <p className="muted">Waiting for the host to start.</p>}
+      <button className="link" onClick={() => chain.call('leave_lobby', { match_id: match.id })}>Leave</button>
+    </div>
+  );
+}
+
+function OrdersPanel() {
+  const { view, draft, tool, set, match, submittedTurn, selected } = useStore();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  if (!view || !match) return null;
+  const used = spent();
+  const locked = match.status !== 'Running';
+  const send = async () => {
+    setBusy(true); setErr(null);
+    try { await sendOrders(); } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
+  };
+  return (
+    <aside className="panel orders">
+      <div className="aether">
+        <span>Aether</span>
+        <div className="bar"><i style={{ width: `${view.aether ? (100 * used) / view.aether : 0}%` }} /></div>
+        <b>{view.aether - used}</b><span className="muted">/ {view.aether} · +{view.income}/turn</span>
+      </div>
+      <div className="tools">
+        {(['move', 'scout', 'fort'] as const).map((t) => (
+          <button key={t} className={tool === t ? 'on' : ''} onClick={() => set({ tool: t, selected: null })}>
+            {t === 'move' ? 'Move' : t === 'scout' ? `Scout · ${SCOUT_COST}` : `Fort · ${FORT_COST}`}
+          </button>
+        ))}
+      </div>
+      <p className="hint">
+        {tool === 'move' && (selected == null ? 'Click one of your islands, then a neighbouring island.' : `Moving from ${fmtHex(new Board(view.radius).hex(selected))} — ${available(selected)} available. Click a highlighted island.`)}
+        {tool === 'scout' && 'Click up to 3 islands in a row, starting next to your land. The scout reveals 2 tiles around where it ends.'}
+        {tool === 'fort' && 'Click one of your islands: ×1.5 defence.'}
+      </p>
+      <label className="recruit">
+        Recruit at capital
+        <input type="range" min={0} max={Math.min(MAX_RECRUIT, view.aether)} value={draft.recruit} onChange={(e) => setRecruit(+e.target.value)} />
+        <b>{draft.recruit}</b>
+      </label>
+      <ul className="moves">
+        {draft.moves.map((m, k) => (
+          <li key={k}>
+            <span>{fmtHex(m.from)} → {fmtHex(m.to)}</span>
+            <button className="small" onClick={() => setMoveCount(k, m.count - 1)}>−</button>
+            <b>{m.count}</b>
+            <button className="small" onClick={() => setMoveCount(k, m.count + 1)}>+</button>
+            <button className="small x" onClick={() => removeMove(k)}>×</button>
+          </li>
+        ))}
+        {draft.scout && <li><span>Scout: {draft.scout.map(fmtHex).join(' → ')}</span><button className="small x" onClick={() => set({ draft: { ...draft, scout: null } })}>×</button></li>}
+        {draft.fort && <li><span>Fort at {fmtHex(draft.fort)}</span><button className="small x" onClick={() => set({ draft: { ...draft, fort: null } })}>×</button></li>}
+      </ul>
+      <button className="primary seal" disabled={busy || locked} onClick={send}>
+        {locked ? 'Resolving…' : submittedTurn === match.turn ? '🔒 Sealed — update orders' : '🔒 Seal & send orders'}
+      </button>
+      <p className="muted small">Sealed in your browser to the enclave’s key for this match. The chain stores only ciphertext.</p>
+      {err && <div className="err">{err}</div>}
+    </aside>
+  );
+}
+
+function TileInfo({ index, tiles, board }: { index: number | null; tiles: ReturnType<typeof tilesFromView>; board: Board | null }) {
+  const { match, chain } = useStore();
+  if (index == null || !board || !tiles[index]) return null;
+  const t = tiles[index];
+  const h = board.hex(index);
+  return (
+    <div className="tileinfo panel">
+      <b>{fmtHex(h)}</b>{' '}
+      {t.terrain == null ? <span className="muted">Veiled — never seen</span> : (
+        <>
+          <span>{TERRAIN_NAMES[t.terrain]}</span>
+          {t.terrain !== 4 && <span className="muted"> · def ×{DEFENSE[t.terrain]}{t.fort ? ' ×1.5 fort' : ''} · +{INCOME[t.terrain]} aether</span>}
+          {t.sight === 'visible' ? (
+            t.owner != null ? <span> · <i className="dot" style={{ background: seatColor(t.owner) }} /> {seatName(match, t.owner, chain?.account)} · {t.troops} troops</span> : <span className="muted"> · unclaimed</span>
+          ) : <span className="muted"> · remembered (out of sight)</span>}
+        </>
+      )}
+    </div>
+  );
+}
+
+function Feed() {
+  const feed = useStore((s) => s.feed);
+  return (
+    <div className="feed">
+      {feed.slice(0, 8).map((f) => (
+        <div key={f.id} className={`item ${f.tone}`}><span className="t">T{f.turn}</span>{f.text}</div>
+      ))}
+    </div>
+  );
+}
+
+function EndPanel() {
+  const { match, chain, set } = useStore();
+  if (!match || !chain) return null;
+  return (
+    <div className="panel float-center end">
+      <h2>{match.status === 'Finished' ? 'The war is over' : match.status === 'Revealing' ? 'Revealing…' : 'Revealed'}</h2>
+      <ol>
+        {(match.ranking ?? []).map((i) => (
+          <li key={i} style={{ ['--c' as string]: seatColor(i) }}><i className="dot" style={{ background: seatColor(i) }} /> {seatName(match, i, chain.account)}</li>
+        ))}
+      </ol>
+      {match.payouts.length > 0 && (
+        <p>Payouts: {match.payouts.map(([a, v]) => `${a === chain.account ? 'you' : a} $${(Number(v) / 1e6).toFixed(2)}`).join(', ')}. Winnings are claimable from the lobby.</p>
+      )}
+      {match.status === 'Revealed' ? (
+        <button className="primary" onClick={() => set({ screen: 'reveal' })}>Open The Reveal</button>
+      ) : (
+        <p className="muted">The enclave is publishing the full hidden history…</p>
+      )}
+    </div>
+  );
+}

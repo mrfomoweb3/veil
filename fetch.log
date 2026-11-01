@@ -1,0 +1,25 @@
+    Updating crates.io index
+warning: spurious network error (20 tries remaining): [6] Couldn't resolve host name (Could not resolve host: index.crates.io)
+warning: spurious network error (19 tries remaining): [6] Couldn't resolve host name (Could not resolve host: index.crates.io)
+warning: spurious network error (18 tries remaining): [6] Couldn't resolve host name (Could not resolve host: index.crates.io)
+warning: spurious network error (17 tries remaining): [6] Couldn't resolve host name (Could not resolve host: index.crates.io)
+warning: spurious network error (16 tries remaining): [6] Couldn't resolve host name (Could not resolve host: index.crates.io)
+warning: spurious network error (15 tries remaining): [6] Couldn't resolve host name (Could not resolve host: index.crates.io)
+warning: spurious network error (14 tries remaining): [6] Couldn't resolve host name (Could not resolve host: index.crates.io)
+warning: spurious network error (13 tries remaining): [6] Couldn't resolve host name (Could not resolve host: index.crates.io)
+warning: spurious network error (12 tries remaining): [6] Couldn't resolve host name (Could not resolve host: index.crates.io)
+warning: spurious network error (11 tries remaining): [6] Couldn't resolve host name (Could not resolve host: index.crates.io)
+     Locking 13 packages to latest compatible versions
+      Adding base64 v0.22.1 (available: v0.23.1)
+      Adding base64ct v1.8.3
+      Adding const-oid v0.9.6
+      Adding der v0.7.10
+      Adding ed25519 v2.2.3
+      Adding ed25519-dalek v2.2.0 (available: v3.0.0)
+      Adding getrandom v0.3.4 (available: v0.4.3)
+      Adding pkcs8 v0.10.2
+      Adding r-efi v5.3.0
+      Adding signature v2.2.0
+      Adding spki v0.7.3
+      Adding wasip2 v1.0.4+wasi-0.2.12
+      Adding wit-bindgen v0.57.1

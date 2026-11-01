@@ -1,0 +1,13 @@
+{
+  "name": "veil-relayer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Pays gas for VEIL players (NEP-366 meta-transactions), creates their implicit accounts, and cranks turns.",
+  "scripts": { "start": "node server.mjs", "test": "node --test test.mjs roundtrip.test.mjs" },
+  "dependencies": {
+    "@near-js/transactions": "1.3.1",
+    "borsh": "1.0.0",
+    "near-api-js": "5.0.1"
+  }
+}

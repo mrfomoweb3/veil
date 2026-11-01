@@ -1,0 +1,17 @@
+[package]
+name = "veil-wasm"
+description = "The verifier and replayer for the browser: plain C ABI, no wasm-bindgen."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+veil-rules = { path = "../veil-rules" }
+veil-verify = { path = "../veil-verify" }
+veil-engine = { path = "../../engine", default-features = false }
+serde.workspace = true
+serde_json.workspace = true
+hex.workspace = true

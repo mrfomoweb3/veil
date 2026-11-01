@@ -1,0 +1,13 @@
+[package]
+name = "veil-crypto"
+description = "ECIES (X25519 + HKDF-SHA256 + XChaCha20-Poly1305) for VEIL orders and views."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+x25519-dalek = { version = "2", features = ["static_secrets"] }
+chacha20poly1305 = { version = "0.10", default-features = false, features = ["alloc"] }
+hkdf = "0.12"
+sha2.workspace = true
+hex.workspace = true

@@ -1,0 +1,20 @@
+[package]
+name = "veil-verify"
+description = "Re-run a finished VEIL match from The Reveal and check every VRF proof and state commitment."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+veil-rules = { path = "../veil-rules" }
+veil-crypto = { path = "../veil-crypto" }
+veil-engine = { path = "../../engine", default-features = false }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+hex.workspace = true
+base64 = "0.22"
+ed25519-dalek = "2"
+
+[dev-dependencies]
+veil-engine = { path = "../../engine" }

@@ -1,0 +1,29 @@
+[package]
+name = "veil-engine"
+description = "VEIL engine: runs inside the OutLayer TEE (see engine/outlayer) or locally for development."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["local"]
+# Native emulation of the OutLayer host (sealed storage, VRF, keys) for development and tests.
+local = ["dep:hmac", "dep:ed25519-dalek", "dep:chacha20poly1305", "dep:getrandom"]
+
+[dependencies]
+veil-rules = { path = "../crates/veil-rules" }
+veil-crypto = { path = "../crates/veil-crypto" }
+serde.workspace = true
+serde_json.workspace = true
+hex.workspace = true
+sha2.workspace = true
+base64 = "0.22"
+getrandom = { version = "0.3", optional = true }
+hmac = { version = "0.12", optional = true }
+ed25519-dalek = { version = "2", optional = true }
+chacha20poly1305 = { version = "0.10", optional = true }
+
+[[bin]]
+name = "veil-engine-local"
+path = "src/bin/local.rs"
+required-features = ["local"]
