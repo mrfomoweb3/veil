@@ -36,6 +36,11 @@ Scope = the core already built + four additions:
   2. **Real money behind a localStorage key is fragile.** The vault backup is encrypted with a key derived from that same NEAR key, so losing the browser key loses the backup too. Fix before mainnet: for Stakes/cash-out, connect a real NEAR wallet (NEAR Connect), or export the NEAR key inside the backup behind a passphrase. **Decision needed from you.**
 - "Selected unit" in the gamepad spec = selected tile here. Triangle's "threat view" overlay does not exist yet: build a simple one (visible enemy strength per tile) or map Triangle to the fog-memory toggle.
 
+## Progress
+
+- **Days 1–2 done (gamepad groundwork, ahead of plan):** input action layer (`web/src/input/`), gamepad polling with radial deadzone / repeat / edge detection / hold-to-seal / hot-plug, keyboard controls, spatial focus manager for every menu, camera-relative tile cursor, pad camera, threat view, PS/Xbox glyphs, rumble, pause menu, performance mode (`?lite`). Verified with a virtual DualSense driving the real input code: intro → tutorial, and a real match (select, march, hold-to-seal resolved by the engine, unplug → pause). 17 client unit tests.
+- Still open from Part 2: the radial order menu (day 7; Square/X currently jumps to the orders panel) and testing on physical controllers (needs your pads: DualSense USB/BT, DS4, Xbox).
+
 ## Locked decisions (2026-11-01)
 
 1. **Accounts.** Practice: browser-held key, no wallet, no popups. Stakes and Gloam cash-out: a real NEAR wallet via **NEAR Connect**. The Gloam vault key is derived from a NEP-413 signature by that wallet, so it is recoverable on any device.

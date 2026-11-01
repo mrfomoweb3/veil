@@ -7,6 +7,7 @@ import { decodeView, ISSUES, ORDER_LABEL } from '../protocol/view';
 import { Board } from '../protocol/hex';
 import { emptyOrders } from '../protocol/orders';
 import { loadMemory, saveMemory, viewKey } from '../session';
+import { rumble } from '../input/rumble';
 
 const hexLabel = (h: [number, number]) => `(${h[0]}, ${h[1]})`;
 
@@ -55,7 +56,11 @@ async function refresh() {
   const memory = st.memory && st.memory.length === board.size ? st.memory : loadMemory(matchId, chain.account, board.size);
   for (const t of pv.tiles) memory[t.index] = t.terrain;
   saveMemory(matchId, chain.account, memory);
+  const enemiesBefore = st.view ? st.view.tiles.filter((t) => t.owner != null && t.owner !== st.view!.me).length : 0;
+  const enemiesNow = pv.tiles.filter((t) => t.owner != null && t.owner !== pv.me).length;
   useStore.setState({ view: pv, memory: new Int8Array(memory), draft: emptyOrders(), selected: null, submittedTurn: null, error: null });
+  if (pv.reports.length) rumble('combat');
+  else if (enemiesNow > enemiesBefore) rumble('reveal');
   for (const f of pv.feedback) useStore.getState().push(`${ORDER_LABEL(f.order)}: ${ISSUES[f.issue] ?? 'issue ' + f.issue}`, 'bad', pv.turn);
   for (const r of pv.reports) {
     const where = hexLabel(board.hex(r.tile));

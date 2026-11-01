@@ -12,6 +12,14 @@ import { encodeOrders } from '../protocol/orders';
 import { hexDistance as hexDist, type Hex } from '../protocol/hex';
 import * as T from '../game/tutorial';
 import { quickPractice } from './lobbyActions';
+import { useBoardCursor } from '../game/boardCursor';
+import { PadCamera } from '../scene/PadCamera';
+import { onAction } from '../input/actions';
+import { focusInto } from '../input/focus';
+import { useInput } from '../input/inputMode';
+import { rumble } from '../input/rumble';
+import { Glyph } from '../input/glyphs';
+import { useEffect } from 'react';
 
 type Step = 'welcome' | 'capital' | 'march' | 'recruit' | 'seal' | 'enclave' | 'battle' | 'dice' | 'reveal' | 'tech' | 'ready';
 const STEPS: Step[] = ['welcome', 'capital', 'march', 'recruit', 'seal', 'enclave', 'battle', 'dice', 'reveal', 'tech', 'ready'];
@@ -48,6 +56,20 @@ export function Tutorial() {
     setStep(s);
   };
   const at = STEPS.indexOf(step);
+  const boardStep = step === 'capital' || step === 'march' || step === 'battle';
+  const mode = useInput((st) => st.mode);
+  const padLike = mode === 'gamepad' || mode === 'keyboard';
+  const [cursor, setCursor] = useBoardCursor({ tiles, start: capIdx, enabled: boardStep, onSelect: (i) => onTile(i) });
+
+  // Pad and keyboard players: on explanation steps, land on the coach's main button.
+  useEffect(() => {
+    if (!boardStep && (useInput.getState().mode === 'gamepad' || useInput.getState().mode === 'keyboard')) {
+      const t = setTimeout(() => focusInto('.coach'), 120);
+      return () => clearTimeout(t);
+    }
+  }, [step, boardStep, cipher, verified, reveal]);
+  useEffect(() => onAction((a) => { if (a.type === 'orderMenu') focusInto('.coach'); }), []);
+  useEffect(() => { if (step === 'battle') rumble('reveal'); }, [step]);
 
   const targets = selected != null ? T.neighboursOf(T.board.hex(selected)).filter((i) => tiles[i].terrain != null && tiles[i].terrain !== 4) : [];
 
@@ -114,6 +136,7 @@ export function Tutorial() {
     if (!vrf || !move) return;
     setResolving(true);
     setBattle([T.board.hex(raidIdx)]);
+    rumble('combat');
     await new Promise((r) => setTimeout(r, 1800));
     setWorld((w) => {
       const n = w.map((t) => ({ ...t }));
@@ -142,8 +165,10 @@ export function Tutorial() {
   return (
     <div className="screen tutorial">
       <World focus={focus} distance={reveal ? 14 : 9} onMiss={() => setSelected(null)}>
-        <Islands tiles={tiles} onTile={onTile} />
-        <FogClouds tiles={tiles} onTile={onTile} />
+        <Islands tiles={tiles} onTile={(i) => { setCursor(i); onTile(i); }} />
+        <FogClouds tiles={tiles} onTile={(i) => { setCursor(i); onTile(i); }} />
+        <PadCamera follow={padLike && boardStep && cursor != null ? tiles[cursor].pos : null} />
+        {padLike && boardStep && cursor != null && <Ring pos={tiles[cursor].pos} color="#ffe08a" pulse radius={1.02} />}
         <TroopChips tiles={tiles} me={T.ME} />
         {move && <OrderArcs tiles={tiles} board={T.board} orders={{ moves: [move], scout: null, fort: null, recruit: 0 }} color={seatColor(T.ME)} solid={!!cipher} />}
         <BattleMarks tiles={tiles} board={T.board} battles={battle} />
@@ -173,14 +198,14 @@ export function Tutorial() {
           <>
             <h2>1 · Your capital</h2>
             <p>This keep flying your banner is your capital. Lose it and you are out. Each turn it can recruit troops with <b>aether</b>, the currency your islands produce.</p>
-            <p className="do">👉 Click your capital (the glowing island).</p>
+            <p className="do">👉 {padLike ? <>Move the cursor to your capital (the glowing island) and press <Glyph h="select" />.</> : 'Click your capital (the glowing island).'}</p>
           </>
         )}
         {step === 'march' && (
           <>
             <h2>2 · March</h2>
             <p>Troops move one island per turn. Islands next to your army light up.</p>
-            <p className="do">👉 Click a highlighted neighbour to send 5 troops.</p>
+            <p className="do">👉 {padLike ? <>Move to a highlighted neighbour and press <Glyph h="select" /> to send 5 troops.</> : 'Click a highlighted neighbour to send 5 troops.'}</p>
           </>
         )}
         {step === 'recruit' && (
@@ -223,7 +248,7 @@ export function Tutorial() {
           <>
             <h2>6 · Contact!</h2>
             <p>Your march pushed back the clouds — and revealed <b style={{ color: seatColor(T.ENEMY) }}>Raiders</b> camped next door. Nobody told you they were there; nobody could.</p>
-            <p className="do">👉 Click your army, then the enemy island to attack.</p>
+            <p className="do">👉 {padLike ? <>Select your army (<Glyph h="select" />), then the enemy island.</> : 'Click your army, then the enemy island to attack.'}</p>
           </>
         )}
         {step === 'dice' && vrf && (
@@ -287,7 +312,7 @@ export function Tutorial() {
           )}
         </div>
       </div>
-      {step === 'capital' || step === 'march' || step === 'battle' ? <div className="tutorial-hint">Drag to orbit · scroll to zoom</div> : null}
+      {boardStep ? <div className="tutorial-hint">{padLike ? <><Glyph h="move" /> move · <Glyph h="camera" /> camera · <Glyph h="zoom" /> zoom</> : 'Drag to orbit · scroll to zoom'}</div> : null}
     </div>
   );
 }

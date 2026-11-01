@@ -6,6 +6,8 @@ import { decorativeTiles } from '../scene/tiles';
 import { useStore } from '../store';
 import { quickPractice } from './lobbyActions';
 import { Logo } from './Logo';
+import { useInput } from '../input/inputMode';
+import { Glyph } from '../input/glyphs';
 
 const RUNES = ['ᚠ', 'ᚱ', 'ᛉ', 'ᚦ'];
 
@@ -15,6 +17,8 @@ export function Landing() {
   const set = useStore((s) => s.set);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const pad = useInput((s) => s.padConnected);
+  const family = useInput((s) => s.family);
 
   const quick = async () => {
     setBusy(true);
@@ -33,7 +37,7 @@ export function Landing() {
       <main className="intro-center">
         <Logo />
         <button className="play-btn" onClick={() => set({ screen: 'tutorial' })}>
-          <span>PLAY</span>
+          <span>PLAY</span> <Glyph h="select" />
         </button>
         <div className="intro-links">
           <button className="link" disabled={!chain || busy} onClick={quick}>{busy ? 'Raising the islands…' : 'Skip the tutorial — quick match'}</button>
@@ -41,6 +45,7 @@ export function Landing() {
           <button className="link" disabled={!chain} onClick={() => set({ screen: 'lobby' })}>Lobbies</button>
         </div>
         <p className="intro-tag">A strategy game where even the developer can’t see the map.</p>
+        <p className="pad-hint">{pad ? `🎮 ${family === 'playstation' ? 'PlayStation' : family === 'xbox' ? 'Xbox' : ''} controller ready` : '🎮 Controller? Press any button on it'}</p>
         {err && <div className="err">{err}</div>}
       </main>
     </div>

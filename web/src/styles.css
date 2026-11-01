@@ -282,3 +282,19 @@ label.row { display: flex; gap: 8px; align-items: center; }
 /* The title typeface carries through the game. */
 .panel h2, .end h2, .topbar .title b { font-family: 'Cinzel', Georgia, serif; letter-spacing: 0.02em; }
 .panel h2 { color: #ffd98a; }
+
+/* ------------------------------------------------------------ controllers & keyboard */
+:focus-visible { outline: none; }
+button:focus-visible, select:focus-visible, input:focus-visible, [data-focus]:focus-visible {
+  box-shadow: 0 0 0 3px #1a1433, 0 0 0 6px #ffe08a, 0 0 22px rgba(255, 224, 138, 0.55) !important;
+}
+.glyph { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; margin: 0 2px; border-radius: 6px; font: 700 11px/1 Inter, system-ui, sans-serif; color: #f3eefc; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.25); vertical-align: middle; text-shadow: none; letter-spacing: 0; }
+.glyph.gamepad.playstation { border-radius: 999px; min-width: 22px; height: 22px; font-size: 13px; }
+.play-btn .glyph { font-size: 14px; height: 26px; min-width: 26px; }
+.controls-bar { position: absolute; right: 16px; bottom: 16px; z-index: 4; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px 12px; max-width: 560px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; font-size: 12px; color: var(--muted); backdrop-filter: blur(10px); }
+.seal { position: relative; overflow: hidden; }
+.seal::after { content: ''; position: absolute; left: 0; bottom: 0; height: 4px; width: var(--hold, 0%); background: #fff7dd; transition: width 0.05s linear; }
+.pad-hint { color: #8f8494; font-size: 12px; margin: 0; }
+.controls-table { border-collapse: collapse; margin: 8px 0 12px; font-size: 13px; }
+.controls-table td { padding: 4px 10px 4px 0; }
+@media (max-width: 760px) { .controls-bar { display: none; } }

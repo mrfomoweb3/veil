@@ -6,7 +6,10 @@ import { Vector3 } from 'three';
 import type { OrbitControls as OrbitImpl } from 'three-stdlib';
 import { CloudSea, SkyDome } from './Sky';
 
-const lowEnd = typeof navigator !== 'undefined' && (navigator.hardwareConcurrency ?? 8) <= 4;
+/** Performance mode: weak hardware, or `?lite` in the URL. Drops AO, soft shadows and tilt-shift. */
+const lowEnd =
+  typeof navigator !== 'undefined' &&
+  ((navigator.hardwareConcurrency ?? 8) <= 4 || new URLSearchParams(location.search).has('lite'));
 
 /** Dives the camera to `focus` whenever it changes; free orbit/pan afterwards. */
 function CameraRig({ focus, distance, auto }: { focus: [number, number, number]; distance: number; auto?: boolean }) {
@@ -61,7 +64,7 @@ export function World({ children, focus = [0, 0, 0], distance = 16, auto, onMiss
     <Canvas
       className="world"
       dpr={[1, lowEnd ? 1.25 : 2]}
-      shadows="soft"
+      shadows={lowEnd ? false : 'soft'}
       camera={{ position: [0, 60, 50], fov: 30, near: 0.5, far: 900 }}
       gl={{ antialias: false, powerPreference: 'high-performance' }}
       onPointerMissed={onMiss}
@@ -90,13 +93,20 @@ export function World({ children, focus = [0, 0, 0], distance = 16, auto, onMiss
       <CloudSea />
       <Suspense fallback={null}>{children}</Suspense>
       <CameraRig focus={focus} distance={distance} auto={auto} />
-      <EffectComposer multisampling={0} enableNormalPass={false}>
-        <N8AO aoRadius={0.9} distanceFalloff={0.6} intensity={2.6} quality={lowEnd ? 'performance' : 'medium'} halfRes={lowEnd} color="#2a1a2e" />
-        <SMAA />
-        <Bloom luminanceThreshold={0.9} mipmapBlur intensity={0.55} />
-        <TiltShift2 blur={lowEnd ? 0.06 : 0.12} />
-        <Vignette darkness={0.5} offset={0.3} />
-      </EffectComposer>
+      {lowEnd ? (
+        <EffectComposer multisampling={0} enableNormalPass={false}>
+          <SMAA />
+          <Vignette darkness={0.5} offset={0.3} />
+        </EffectComposer>
+      ) : (
+        <EffectComposer multisampling={0} enableNormalPass={false}>
+          <N8AO aoRadius={0.9} distanceFalloff={0.6} intensity={2.6} quality="medium" color="#2a1a2e" />
+          <SMAA />
+          <Bloom luminanceThreshold={0.9} mipmapBlur intensity={0.55} />
+          <TiltShift2 blur={0.12} />
+          <Vignette darkness={0.5} offset={0.3} />
+        </EffectComposer>
+      )}
     </Canvas>
   );
 }

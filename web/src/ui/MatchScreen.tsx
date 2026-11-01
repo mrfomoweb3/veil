@@ -13,6 +13,13 @@ import { DEFENSE, INCOME, TERRAIN_NAMES } from '../protocol/view';
 import { FORT_COST, MAX_RECRUIT, SCOUT_COST } from '../protocol/orders';
 import { rotateViewKey } from '../session';
 import { AttestSheet } from './Attest';
+import { useBoardCursor } from '../game/boardCursor';
+import { PadCamera } from '../scene/PadCamera';
+import { ThreatMarks } from '../scene/Threat';
+import { onAction } from '../input/actions';
+import { useInput } from '../input/inputMode';
+import { focusInto, uiHasFocus } from '../input/focus';
+import { Glyph } from '../input/glyphs';
 
 function useNow(ms = 250) {
   const [now, setNow] = useState(Date.now());
@@ -32,6 +39,38 @@ export function MatchScreen() {
   const capitals = useMemo(() => (view && board ? inferCapitals(view.radius, view.seats.length, view.me, board.hex(view.capital)) : []), [view, board]);
   const lastBattles = facts.length ? facts[facts.length - 1].battles : [];
   const targets = selected != null ? moveTargets(selected) : [];
+  const mode = useInput((st) => st.mode);
+  const padLike = mode === 'gamepad' || mode === 'keyboard';
+  const [overlay, setOverlay] = useState<'none' | 'threat'>('none');
+  const [cursor, setCursor] = useBoardCursor({ tiles, start: view ? view.capital : null, enabled: !!view, onSelect: clickTile });
+
+  // Match-wide actions (the cursor and select are handled by useBoardCursor).
+  useEffect(
+    () =>
+      onAction((a) => {
+        const st = useStore.getState();
+        if (useInput.getState().paused) return;
+        if (a.type === 'cycleUnit' && st.view) {
+          const mine = st.view.tiles.filter((t) => t.owner === st.view!.me && t.troops > 0).map((t) => t.index).sort((x, y) => x - y);
+          if (!mine.length) return;
+          setCursor((c) => {
+            const k = c == null ? -1 : mine.indexOf(c);
+            return mine[(k + a.dir + mine.length) % mine.length] ?? mine[0];
+          });
+        } else if (a.type === 'back' && !uiHasFocus()) {
+          st.set({ selected: null });
+        } else if (a.type === 'orderMenu') {
+          focusInto('.orders');
+        } else if (a.type === 'cycleOverlay') {
+          setOverlay((o) => (o === 'none' ? 'threat' : 'none'));
+        } else if (a.type === 'endTurnHold') {
+          useInput.getState().set({ endHold: a.progress });
+        } else if (a.type === 'endTurn' && st.match?.status === 'Running' && st.view?.alive) {
+          sendOrders().catch((e) => st.push((e as Error).message, 'bad'));
+        }
+      }),
+    [setCursor],
+  );
 
   if (!chain) return null;
   const seated = match?.seats.find((x) => x.account === chain.account);
@@ -40,8 +79,11 @@ export function MatchScreen() {
     <div className="screen match">
       {view && board ? (
         <World focus={capPos} distance={15} onMiss={() => s.set({ selected: null })}>
-          <Islands tiles={tiles} onTile={clickTile} onHover={setHover} />
-          <FogClouds tiles={tiles} onTile={clickTile} />
+          <Islands tiles={tiles} onTile={(i) => { setCursor(i); clickTile(i); }} onHover={setHover} />
+          <FogClouds tiles={tiles} onTile={(i) => { setCursor(i); clickTile(i); }} />
+          <PadCamera follow={cursor != null && tiles[cursor] ? tiles[cursor].pos : null} />
+          {overlay === 'threat' && <ThreatMarks tiles={tiles} me={me} />}
+          {padLike && cursor != null && tiles[cursor] && <Ring pos={tiles[cursor].pos} color="#ffe08a" pulse radius={1.02} />}
           <TroopChips tiles={tiles} me={me} />
           <OrderArcs tiles={tiles} board={board} orders={draft} color={seatColor(me)} solid={s.submittedTurn === match?.turn} />
           <BattleMarks tiles={tiles} board={board} battles={lastBattles} />
@@ -60,7 +102,8 @@ export function MatchScreen() {
       <TopBar />
       {match?.status === 'Lobby' && <LobbyPanel />}
       {view && match && ['Running', 'Resolving'].includes(match.status) && view.alive && seated && <OrdersPanel />}
-      {view && <TileInfo index={hover ?? selected} tiles={tiles} board={board} />}
+      {view && <TileInfo index={(padLike ? cursor : hover) ?? selected} tiles={tiles} board={board} />}
+      {view && <ControlsBar overlay={overlay} />}
       <Feed />
       {match && ['Finished', 'Revealing', 'Revealed'].includes(match.status) && <EndPanel />}
       {view && !view.alive && match?.status === 'Running' && <div className="banner bad">Your capital has fallen. Watch the war unfold — The Reveal will show you everything.</div>}
@@ -129,6 +172,9 @@ function LobbyPanel() {
 
 function OrdersPanel() {
   const { view, draft, tool, set, match, submittedTurn, selected } = useStore();
+  const endHold = useInput((st) => st.endHold);
+  const inputMode = useInput((st) => st.mode);
+  const padLike = inputMode === 'gamepad' || inputMode === 'keyboard';
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   if (!view || !match) return null;
@@ -153,9 +199,11 @@ function OrdersPanel() {
         ))}
       </div>
       <p className="hint">
-        {tool === 'move' && (selected == null ? 'Click one of your islands, then a neighbouring island.' : `Moving from ${fmtHex(new Board(view.radius).hex(selected))} — ${available(selected)} available. Click a highlighted island.`)}
-        {tool === 'scout' && 'Click up to 3 islands in a row, starting next to your land. The scout reveals 2 tiles around where it ends.'}
-        {tool === 'fort' && 'Click one of your islands: ×1.5 defence.'}
+        {tool === 'move' && (selected == null
+          ? (padLike ? 'Select one of your islands, then a neighbouring island.' : 'Click one of your islands, then a neighbouring island.')
+          : `Moving from ${fmtHex(new Board(view.radius).hex(selected))} — ${available(selected)} available. ${padLike ? 'Select' : 'Click'} a highlighted island.`)}
+        {tool === 'scout' && `${padLike ? 'Select' : 'Click'} up to 3 islands in a row, starting next to your land. The scout reveals 2 tiles around where it ends.`}
+        {tool === 'fort' && `${padLike ? 'Select' : 'Click'} one of your islands: ×1.5 defence.`}
       </p>
       <label className="recruit">
         Recruit at capital
@@ -175,12 +223,30 @@ function OrdersPanel() {
         {draft.scout && <li><span>Scout: {draft.scout.map(fmtHex).join(' → ')}</span><button className="small x" onClick={() => set({ draft: { ...draft, scout: null } })}>×</button></li>}
         {draft.fort && <li><span>Fort at {fmtHex(draft.fort)}</span><button className="small x" onClick={() => set({ draft: { ...draft, fort: null } })}>×</button></li>}
       </ul>
-      <button className="primary seal" disabled={busy || locked} onClick={send}>
-        {locked ? 'Resolving…' : submittedTurn === match.turn ? '🔒 Sealed — update orders' : '🔒 Seal & send orders'}
+      <button className="primary seal" disabled={busy || locked} onClick={send} style={{ ['--hold' as string]: `${Math.round(endHold * 100)}%` }}>
+        {locked ? 'Resolving…' : submittedTurn === match.turn ? '🔒 Sealed — update orders' : '🔒 Seal & send orders'} <Glyph h="endTurn" />
       </button>
       <p className="muted small">Sealed in your browser to the enclave’s key for this match. The chain stores only ciphertext.</p>
       {err && <div className="err">{err}</div>}
     </aside>
+  );
+}
+
+function ControlsBar({ overlay }: { overlay: 'none' | 'threat' }) {
+  const mode = useInput((st) => st.mode);
+  if (mode !== 'gamepad' && mode !== 'keyboard') return null;
+  return (
+    <div className="controls-bar">
+      <span><Glyph h="move" /> cursor</span>
+      <span><Glyph h="select" /> select</span>
+      <span><Glyph h="back" /> cancel</span>
+      <span><Glyph h="orderMenu" /> orders panel</span>
+      <span><Glyph h="cyclePrev" /><Glyph h="cycleNext" /> armies</span>
+      <span><Glyph h="overlay" /> threat {overlay === 'threat' ? 'on' : 'off'}</span>
+      <span><Glyph h="camera" /> camera</span>
+      <span><Glyph h="endTurn" /> {mode === 'gamepad' ? 'hold to seal' : 'seal'}</span>
+      <span><Glyph h="pause" /> menu</span>
+    </div>
   );
 }
 
