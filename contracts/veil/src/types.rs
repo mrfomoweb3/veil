@@ -104,3 +104,16 @@ pub struct Config {
     pub rake_bps: u16,
     pub rake: U128,
 }
+
+/// A warlord's on-chain wallet. Funded by anyone; moved only by match results.
+#[near(serializers = [borsh, json])]
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct WarlordBook {
+    /// USDC the warlord holds (6 decimals).
+    pub treasury: U128,
+    pub played: u32,
+    pub won: u32,
+    /// Total paid in buy-ins and total won in prizes, all time.
+    pub staked: U128,
+    pub earned: U128,
+}

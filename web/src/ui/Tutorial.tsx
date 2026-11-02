@@ -99,7 +99,7 @@ export function Tutorial() {
 
   function sealOrders() {
     const gameSk = new Uint8Array(32).fill(7); // the tutorial's stand-in for the enclave's key
-    const orders = { moves: move ? [move] : [], scout: null, fort: null, recruit };
+    const orders = { moves: move ? [move] : [], scout: null, fort: null, recruit, trades: [] };
     const ct = seal(publicKey(gameSk), encodeOrders(orders), ordersAad(1, 1, 'you.near'), INFO_ORDERS);
     setCipher(toHex(ct));
   }
@@ -170,7 +170,7 @@ export function Tutorial() {
         <PadCamera follow={padLike && boardStep && cursor != null ? tiles[cursor].pos : null} />
         {padLike && boardStep && cursor != null && <Ring pos={tiles[cursor].pos} color="#ffe08a" pulse radius={1.02} />}
         <TroopChips tiles={tiles} me={T.ME} />
-        {move && <OrderArcs tiles={tiles} board={T.board} orders={{ moves: [move], scout: null, fort: null, recruit: 0 }} color={seatColor(T.ME)} solid={!!cipher} />}
+        {move && <OrderArcs tiles={tiles} board={T.board} orders={{ moves: [move], scout: null }} color={seatColor(T.ME)} solid={!!cipher} />}
         <BattleMarks tiles={tiles} board={T.board} battles={battle} />
         {selected != null && <Ring pos={tiles[selected].pos} color="#ffffff" pulse />}
         {step === 'capital' && <Ring pos={capPos} color="#ffd36b" pulse radius={1.05} />}

@@ -31,7 +31,7 @@ export function TroopChips({ tiles, me }: { tiles: TileVis[]; me: number | null 
   );
 }
 
-export function OrderArcs({ tiles, board, orders, color, solid }: { tiles: TileVis[]; board: Board; orders: Orders; color: string; solid?: boolean }) {
+export function OrderArcs({ tiles, board, orders, color, solid }: { tiles: TileVis[]; board: Board; orders: Pick<Orders, 'moves' | 'scout'>; color: string; solid?: boolean }) {
   return (
     <>
       {orders.moves.map((m, k) => {

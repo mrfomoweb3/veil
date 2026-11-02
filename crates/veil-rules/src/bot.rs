@@ -3,7 +3,7 @@
 
 use crate::hex::{Board, Hex};
 use crate::orders::{Move, Orders};
-use crate::state::{Terrain, FORT_COST, FORT_MULT, MAX_MOVES, MAX_RECRUIT, SCALE, SCOUT_COST};
+use crate::state::{Prices, Terrain, FORT_COST, FORT_MULT, MAX_MOVES, MAX_RECRUIT, SCALE, SCOUT_COST};
 use crate::view::{PlayerView, VisibleTile};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
@@ -43,6 +43,18 @@ impl Personality {
             Personality::Raider => 1050,
             Personality::Opportunist => 1300,
         }
+    }
+
+    /// What this warlord charges. Intel gets dearer as the war goes on; truces are cheap for
+    /// the peaceful Admiral, dear for the Raider, and discounted when the warlord is under threat.
+    pub fn prices(self, turn: u32, threatened: bool) -> Prices {
+        let (intel, truce) = match self {
+            Personality::Admiral => (5, 2),
+            Personality::Raider => (4, 7),
+            Personality::Opportunist => (3, 4),
+        };
+        let truce: u32 = if threatened { (truce as u32).saturating_sub(1).max(1) } else { truce };
+        Prices { intel: intel + turn / 4, truce }
     }
 
     fn garrison_factor(self) -> u32 {
@@ -371,5 +383,6 @@ pub fn bot_orders(view: &PlayerView, personality: Personality) -> Orders {
             }
         }
     }
+    orders.prices = Some(personality.prices(view.turn, threat > 0));
     orders
 }

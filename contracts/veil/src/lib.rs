@@ -21,6 +21,14 @@ pub const STALE_LOBBY_MS: u64 = 30 * 60 * 1000;
 pub const MAX_FAILURES: u8 = 5;
 pub const AUTOPILOT_AFTER: u8 = 3;
 /// View key for AI seats: nobody reads their views (X25519 base point).
+pub const MAX_WARLORDS: usize = 5;
+/// AI warlords' seat accounts. Not real NEAR accounts: names in this contract's ledger.
+pub fn warlord_id(k: usize) -> AccountId {
+    format!("warlord-{k}.veil").parse().unwrap()
+}
+pub fn is_warlord(a: &AccountId) -> bool {
+    (1..=MAX_WARLORDS).any(|k| &warlord_id(k) == a)
+}
 pub const AI_VIEW_PK: &str = "0900000000000000000000000000000000000000000000000000000000000000";
 const CALLBACK_GAS: Gas = Gas::from_tgas(60);
 const RESERVE_GAS: Gas = Gas::from_tgas(25);
@@ -34,6 +42,7 @@ enum Key {
     Orders,
     History,
     Balances,
+    Warlords,
 }
 
 #[near(serializers = [borsh])]
@@ -63,6 +72,8 @@ pub struct Veil {
     history: LookupMap<(u64, u32), PublicTurn>,
     /// Refunds and winnings, withdrawn with `claim`.
     balances: LookupMap<AccountId, u128>,
+    /// AI warlords' wallets. There is no withdraw: only match results move this money.
+    warlords: LookupMap<AccountId, WarlordBook>,
 }
 
 fn emit(event: &str, data: Value) {
@@ -112,6 +123,7 @@ impl Veil {
             orders: LookupMap::new(Key::Orders),
             history: LookupMap::new(Key::History),
             balances: LookupMap::new(Key::Balances),
+            warlords: LookupMap::new(Key::Warlords),
         }
     }
 
@@ -221,6 +233,18 @@ impl Veil {
             return amount;
         }
         let Ok(v) = serde_json::from_str::<Value>(&msg) else { return amount };
+        // Anyone can stake a warlord: `{"fund_warlord": "warlord-1.veil"}`.
+        if let Some(w) = v["fund_warlord"].as_str() {
+            let Ok(w) = w.parse::<AccountId>() else { return amount };
+            if !is_warlord(&w) {
+                return amount;
+            }
+            let mut book = self.warlords.get(&w).cloned().unwrap_or_default();
+            book.treasury = U128(book.treasury.0 + amount.0);
+            self.warlords.insert(w.clone(), book);
+            emit("veil_warlord_funded", json!({ "warlord": w, "by": sender_id, "amount": amount }));
+            return U128(0);
+        }
         let (Some(id), Some(pk)) = (v["join"].as_u64(), v["view_pk"].as_str()) else { return amount };
         let Some(m) = self.matches.get_mut(&id) else { return amount };
         let Mode::Stakes { buy_in } = m.mode.clone() else { return amount };
@@ -262,18 +286,29 @@ impl Veil {
         let full = humans + m.ai_seats as usize >= m.max_seats as usize;
         require!(full || caller == m.host, "only the host can start before the lobby is full");
         let ai = (m.ai_seats as usize).max(MIN_SEATS.saturating_sub(humans));
+        let buy_in = match &m.mode {
+            Mode::Stakes { buy_in } => buy_in.0,
+            Mode::Practice => 0,
+        };
         for k in 0..ai {
-            let account: AccountId = format!("warlord-{}.veil", k + 1).parse().unwrap();
-            m.seats.push(Seat {
-                account,
-                view_pk: AI_VIEW_PK.into(),
-                ai: true,
-                autopilot: false,
-                missed: 0,
-                alive: true,
-                paid: U128(0),
-            });
+            let account = warlord_id(k + 1);
+            // In Stakes a warlord buys in from its own treasury if it can afford it; a broke
+            // warlord still plays, but can't win prize money.
+            let mut paid = 0;
+            if buy_in > 0 {
+                let mut book = self.warlords.get(&account).cloned().unwrap_or_default();
+                if book.treasury.0 >= buy_in {
+                    book.treasury = U128(book.treasury.0 - buy_in);
+                    book.staked = U128(book.staked.0 + buy_in);
+                    self.warlords.insert(account.clone(), book);
+                    paid = buy_in;
+                }
+            }
+            let m = self.matches.get_mut(&match_id).unwrap();
+            m.pot = U128(m.pot.0 + paid);
+            m.seats.push(Seat { account, view_pk: AI_VIEW_PK.into(), ai: true, autopilot: false, missed: 0, alive: true, paid: U128(paid) });
         }
+        let m = self.matches.get_mut(&match_id).unwrap();
         m.status = Status::Starting;
         let input = json!({
             "op": "init",
@@ -477,8 +512,18 @@ impl Veil {
             mm.failures = mm.failures.saturating_add(1);
             match op {
                 "init" => {
+                    let refunds: Vec<(AccountId, u128)> = mm.seats.iter().filter(|s| s.ai && s.paid.0 > 0).map(|s| (s.account.clone(), s.paid.0)).collect();
                     mm.seats.retain(|s| !s.ai);
+                    mm.pot = U128(mm.pot.0 - refunds.iter().map(|r| r.1).sum::<u128>());
                     mm.status = Status::Lobby;
+                    for (w, amt) in refunds {
+                        let mut book = self.warlords.get(&w).cloned().unwrap_or_default();
+                        book.treasury = U128(book.treasury.0 + amt);
+                        book.staked = U128(book.staked.0 - amt);
+                        self.warlords.insert(w, book);
+                    }
+                    emit("veil_engine_retry", json!({ "match": id, "op": op, "turn": turn }));
+                    return;
                 }
                 "resolve" => {
                     mm.status = Status::Running;
@@ -566,6 +611,19 @@ impl Veil {
         }
         for (acc, amt) in &payouts {
             self.credit(acc, amt.0);
+            if is_warlord(acc) {
+                let mut book = self.warlords.get(acc).cloned().unwrap_or_default();
+                book.earned = U128(book.earned.0 + amt.0);
+                self.warlords.insert(acc.clone(), book);
+            }
+        }
+        for (i, seat) in m.seats.iter().enumerate().filter(|(_, s)| s.ai) {
+            let mut book = self.warlords.get(&seat.account).cloned().unwrap_or_default();
+            book.played += 1;
+            if ranking.as_ref().and_then(|r| r.first()) == Some(&(i as u8)) {
+                book.won += 1;
+            }
+            self.warlords.insert(seat.account.clone(), book);
         }
         self.get_mut(id).payouts = payouts.clone();
         emit("veil_match_finished", json!({ "match": id, "ranking": ranking, "payouts": payouts }));
@@ -574,6 +632,12 @@ impl Veil {
     // ---------------------------------------------------------------- money out
 
     fn credit(&mut self, who: &AccountId, amount: u128) {
+        if is_warlord(who) {
+            let mut book = self.warlords.get(who).cloned().unwrap_or_default();
+            book.treasury = U128(book.treasury.0 + amount);
+            self.warlords.insert(who.clone(), book);
+            return;
+        }
         let cur = self.balances.get(who).copied().unwrap_or(0);
         self.balances.insert(who.clone(), cur + amount);
     }
@@ -646,6 +710,11 @@ impl Veil {
     pub fn get_submitted(&self, match_id: u64) -> Vec<AccountId> {
         let Some(m) = self.matches.get(&match_id) else { return vec![] };
         m.seats.iter().filter(|s| self.orders.contains_key(&(match_id, s.account.clone()))).map(|s| s.account.clone()).collect()
+    }
+
+    /// Every warlord's wallet: treasury, record, all-time stakes and winnings.
+    pub fn get_warlords(&self) -> Vec<(AccountId, WarlordBook)> {
+        (1..=MAX_WARLORDS).map(|k| { let id = warlord_id(k); let b = self.warlords.get(&id).cloned().unwrap_or_default(); (id, b) }).collect()
     }
 
     pub fn get_balance(&self, account: AccountId) -> U128 {

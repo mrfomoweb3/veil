@@ -99,7 +99,7 @@ fn build(match_id: u64, radius: u32, config: Config, terrain: Vec<Terrain>, capi
         let t = &mut tiles[board.index(*c).unwrap()];
         t.owner = Some(p as u8);
         t.troops = START_TROOPS;
-        players.push(Player { aether: START_AETHER, alive: true, capital: *c, eliminated_turn: None });
+        players.push(Player { aether: START_AETHER, alive: true, capital: *c, eliminated_turn: None, ..Default::default() });
     }
     GameState { match_id, turn: 1, radius, config, tiles, players, game_over: false }
 }

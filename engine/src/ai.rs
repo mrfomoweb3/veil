@@ -53,8 +53,11 @@ step from your tile to an adjacent passable tile (max 6 moves), recruit up to 10
 capital (1 aether each), build one fort (6 aether, ×1.5 defense), send one scout up to 3 steps \
 (2 aether, reveals radius 2). Defense: forest ×1.25, highland ×1.15, capital ×1.5. Losing your \
 capital eliminates you. The player holding the most tiles after 20 turns wins. \
+You are also a merchant: players pay you aether for intel (a look at an island you can see) and \
+for truces (you may not move into their islands while it lasts). Set your prices for next turn \
+(1-40 aether): cheap truces buy you peace, dear ones keep your hands free. \
 Reply with ONLY a JSON object: {{\"moves\":[{{\"from\":[q,r],\"to\":[q,r],\"count\":n}}],\
-\"recruit\":n,\"fort\":[q,r] or null,\"scout\":[[q,r],...] or null}}",
+\"recruit\":n,\"fort\":[q,r] or null,\"scout\":[[q,r],...] or null,\"prices\":{{\"intel\":n,\"truce\":n}}}}",
         p.title()
     )
 }

@@ -30,6 +30,10 @@ const CONTRACT = 'veil.local';
 const MIN_SEATS = 2, MAX_SEATS = 6, MAX_ORDERS_B64 = 2800, RETRY_DELAY_MS = 30_000;
 const STALE_LOBBY_MS = 30 * 60 * 1000, MAX_FAILURES = 5, AUTOPILOT_AFTER = 3, RAKE_BPS = 500;
 const AI_VIEW_PK = '09' + '00'.repeat(31);
+const MAX_WARLORDS = 5;
+const warlordId = (k) => `warlord-${k}.veil`;
+const isWarlord = (a) => /^warlord-[1-5]\.veil$/.test(a);
+const book = (w) => (S.warlords ||= {})[w] ||= { treasury: '0', played: 0, won: 0, staked: '0', earned: '0' };
 
 mkdirSync(ENGINE_DIR, { recursive: true });
 if (!existsSync(ENGINE_BIN)) {
@@ -73,6 +77,7 @@ function shares(paying) {
   return [6000n, 2500n, 1500n];
 }
 function credit(acc, amount) {
+  if (isWarlord(acc)) { const b = book(acc); b.treasury = (BigInt(b.treasury) + BigInt(amount)).toString(); return; }
   S.balances[acc] = (BigInt(S.balances[acc] || '0') + BigInt(amount)).toString();
 }
 
@@ -126,7 +131,15 @@ function applyEngineOutput(id, op, turn, out) {
   if (m.status !== expected || (op === 'resolve' && m.turn !== turn)) return;
   if (!ok) {
     m.failures += 1;
-    if (op === 'init') { m.seats = m.seats.filter((s) => !s.ai); m.status = 'Lobby'; }
+    if (op === 'init') {
+      for (const seat of m.seats.filter((s) => s.ai && BigInt(s.paid) > 0n)) {
+        const b = book(seat.account);
+        b.treasury = (BigInt(b.treasury) + BigInt(seat.paid)).toString();
+        b.staked = (BigInt(b.staked) - BigInt(seat.paid)).toString();
+        m.pot = (BigInt(m.pot) - BigInt(seat.paid)).toString();
+      }
+      m.seats = m.seats.filter((s) => !s.ai); m.status = 'Lobby';
+    }
     else if (op === 'resolve') { m.status = 'Running'; m.deadline_ms = now() + RETRY_DELAY_MS; }
     else m.status = 'Finished';
     emit('veil_engine_retry', { match: id, op, turn, failures: m.failures });
@@ -172,9 +185,16 @@ function applyEngineOutput(id, op, turn, out) {
       paid += amt;
       m.payouts.push([paying[i], amt.toString()]);
       credit(paying[i], amt);
+      if (isWarlord(paying[i])) { const b = book(paying[i]); b.earned = (BigInt(b.earned) + amt).toString(); }
     }
     S.rake = (BigInt(S.rake) + rake).toString();
   }
+  m.seats.forEach((seat, i) => {
+    if (!seat.ai) return;
+    const b = book(seat.account);
+    b.played += 1;
+    if (m.ranking?.[0] === i) b.won += 1;
+  });
   emit('veil_match_finished', { match: id, ranking: m.ranking, payouts: m.payouts });
   save();
   // Devnet convenience: reveal straight away (on chain, anyone cranks `reveal`).
@@ -246,8 +266,20 @@ const methods = {
     const full = m.seats.length + m.ai_seats >= m.max_seats;
     require_(full || signer === m.host, 'only the host can start before the lobby is full');
     const ai = Math.max(m.ai_seats, MIN_SEATS - m.seats.length);
+    const buyIn = m.mode.Stakes ? BigInt(m.mode.Stakes.buy_in) : 0n;
     for (let i = 0; i < ai; i++) {
-      m.seats.push({ account: `warlord-${i + 1}.veil`, view_pk: AI_VIEW_PK, ai: true, autopilot: false, missed: 0, alive: true, paid: '0' });
+      const account = warlordId(i + 1);
+      let paid = 0n;
+      if (buyIn > 0n) {
+        const b = book(account);
+        if (BigInt(b.treasury) >= buyIn) {
+          b.treasury = (BigInt(b.treasury) - buyIn).toString();
+          b.staked = (BigInt(b.staked) + buyIn).toString();
+          paid = buyIn;
+        }
+      }
+      m.pot = (BigInt(m.pot) + paid).toString();
+      m.seats.push({ account, view_pk: AI_VIEW_PK, ai: true, autopilot: false, missed: 0, alive: true, paid: paid.toString() });
     }
     m.status = 'Starting';
     save();
@@ -348,6 +380,13 @@ function seatHuman(m, account, view_pk, paid) {
 
 function ftOnTransfer(sender, amount, msg) {
   let v; try { v = JSON.parse(msg); } catch { return amount; }
+  if (v.fund_warlord) {
+    if (!isWarlord(v.fund_warlord)) return amount;
+    const b = book(v.fund_warlord);
+    b.treasury = (BigInt(b.treasury) + BigInt(amount)).toString();
+    emit('veil_warlord_funded', { warlord: v.fund_warlord, by: sender, amount });
+    return '0';
+  }
   const m = S.matches[v.join];
   if (!m || !m.mode.Stakes) return amount;
   const buyIn = BigInt(m.mode.Stakes.buy_in);
@@ -372,6 +411,7 @@ const views = {
   },
   get_submitted: ({ match_id }) => (S.matches[match_id]?.seats || []).filter((s) => S.orders[k(match_id, s.account)]).map((s) => s.account),
   get_balance: ({ account }) => S.balances[account] || '0',
+  get_warlords: () => Array.from({ length: MAX_WARLORDS }, (_, k) => [warlordId(k + 1), { ...book(warlordId(k + 1)) }]),
   // Devnet extras.
   usdc_balance: ({ account }) => S.usdc[account] || '0',
   get_order_log: ({ match_id }) => (S.orderLog || []).filter((o) => o.match === match_id),

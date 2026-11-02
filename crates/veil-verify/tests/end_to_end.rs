@@ -86,7 +86,17 @@ fn full_match_reveal_and_verify() {
             if s.ai || (p == 1 && turn % 3 == 0) {
                 continue;
             }
-            let o = bot_orders(&views[p], Personality::Raider);
+            let mut o = bot_orders(&views[p], Personality::Raider);
+            // Alice trades with warlord 2: a truce on even turns, intel on odd ones.
+            if p == 0 {
+                use veil_rules::orders::{Trade, TradeKind};
+                let kind = if turn % 2 == 0 {
+                    TradeKind::Truce { turns: 2 }
+                } else {
+                    TradeKind::Intel { at: views[0].board().hex(0) }
+                };
+                o.trades.push(Trade { with: 2, kind });
+            }
             let pt = o.to_padded().unwrap();
             let ct = seal(&game_pk, &pt, &orders_aad(id, turn, &s.account), INFO_ORDERS, &[turn as u8 ^ p as u8; 56]);
             let b64 = B64.encode(ct);
@@ -103,6 +113,12 @@ fn full_match_reveal_and_verify() {
         assert_eq!(again["ok"], false);
 
         views = seats.iter().map(|s| decrypt_view(id, turn, s, &out)).collect();
+        if views[0].alive {
+            assert!(views[0].seats[2].warlord && views[0].seats[2].truce_price > 0, "warlord prices are public in every view");
+            let traded = views[0].feedback.iter().any(|f| matches!(f.issue,
+                veil_rules::Issue::TruceBought | veil_rules::Issue::IntelBought | veil_rules::Issue::TradeUnknown | veil_rules::Issue::NotEnoughAether | veil_rules::Issue::TradeRefused));
+            assert!(traded, "every trade gets an answer in the buyer's view");
+        }
         if turn % 3 == 0 {
             assert!(views[1].feedback.iter().any(|f| f.issue == veil_rules::Issue::Missed));
         }

@@ -298,3 +298,14 @@ button:focus-visible, select:focus-visible, input:focus-visible, [data-focus]:fo
 .controls-table { border-collapse: collapse; margin: 8px 0 12px; font-size: 13px; }
 .controls-table td { padding: 4px 10px 4px 0; }
 @media (max-width: 760px) { .controls-bar { display: none; } }
+
+/* ------------------------------------------------------------ warlord market */
+.market { margin: 10px 0 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.market h3 { font: 700 13px 'Cinzel', Georgia, serif; color: #ffd98a; margin: 0 0 6px; }
+.lord { margin: 6px 0 8px; }
+.lord-name { display: flex; align-items: center; gap: 6px; font-size: 12px; flex-wrap: wrap; }
+.truce { color: var(--good); font-size: 11px; }
+.deals { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.deals .on { border-color: var(--accent); color: var(--accent); }
+.lobby-grid .warlords { grid-column: 1 / -1; }
+.lord-row { grid-template-columns: 1.4fr 70px 1.6fr auto; cursor: default; }

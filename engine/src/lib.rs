@@ -139,7 +139,11 @@ fn init(host: &mut impl Host, id: u64, seats: &[SeatIn], config: Config) -> Resu
         return Err("max_turns out of range".into());
     }
     let vrf = host.vrf(&format!("init-{id}"))?;
-    let state = generate(id, seats.len(), config, vrf.seed()?);
+    let mut state = generate(id, seats.len(), config, vrf.seed()?);
+    // AI seats are warlords: they sell intel and truces, priced by their own AI.
+    for (p, s) in seats.iter().enumerate() {
+        state.players[p].warlord = s.ai;
+    }
     let salt = commit_salt(host, id)?;
     let state_commit = commit(&salt, &state);
     let rec = MatchRecord { accounts, state: state.clone(), state_commit: state_commit.clone() };

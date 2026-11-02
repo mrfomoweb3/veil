@@ -11,7 +11,7 @@ use crate::state::{GameState, Terrain};
 use crate::vision::vision;
 use serde::{Deserialize, Serialize};
 
-pub const VIEW_VERSION: u8 = 1;
+pub const VIEW_VERSION: u8 = 2;
 pub const VIEW_PLAINTEXT_LEN: usize = 1024;
 const MAX_REPORTS: usize = 24;
 const MAX_FEEDBACK: usize = 32;
@@ -30,6 +30,12 @@ pub struct VisibleTile {
 pub struct SeatSummary {
     pub alive: bool,
     pub tiles: u16,
+    /// A warlord you can trade with, and its current prices (public).
+    pub warlord: bool,
+    pub intel_price: u16,
+    pub truce_price: u16,
+    /// The last turn this warlord's truce protects *you* (0 = no truce). Private to you.
+    pub truce_until: u16,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -56,7 +62,12 @@ pub struct PlayerView {
 pub fn build_view(state: &GameState, p: u8, outcome: Option<&TurnOutcome>, extra: &[Feedback]) -> PlayerView {
     let board = state.board();
     let scout = outcome.and_then(|o| o.scouts[p as usize]);
-    let seen = vision(state, &board, p, scout);
+    let mut seen = vision(state, &board, p, scout);
+    if let Some(o) = outcome {
+        for &i in o.intel.get(p as usize).into_iter().flatten() {
+            seen[i] = true;
+        }
+    }
     let tiles = (0..board.len())
         .filter(|&i| seen[i])
         .map(|i| {
@@ -92,7 +103,14 @@ pub fn build_view(state: &GameState, p: u8, outcome: Option<&TurnOutcome>, extra
             .players
             .iter()
             .enumerate()
-            .map(|(i, pl)| SeatSummary { alive: pl.alive, tiles: counts[i].min(u16::MAX as u32) as u16 })
+            .map(|(i, pl)| SeatSummary {
+                alive: pl.alive,
+                tiles: counts[i].min(u16::MAX as u32) as u16,
+                warlord: pl.warlord,
+                intel_price: pl.prices.intel.min(u16::MAX as u32) as u16,
+                truce_price: pl.prices.truce.min(u16::MAX as u32) as u16,
+                truce_until: pl.truces.iter().find(|(b, _)| *b == p).map(|t| t.1.min(u16::MAX as u32) as u16).unwrap_or(0),
+            })
             .collect(),
         scout: scout.map(|s| s as u8),
         tiles,
@@ -119,8 +137,11 @@ impl PlayerView {
         b.extend_from_slice(&self.income.to_be_bytes());
         b.push(self.seats.len() as u8);
         for s in &self.seats {
-            b.push(s.alive as u8);
+            b.push(s.alive as u8 | (s.warlord as u8) << 1);
             b.extend_from_slice(&s.tiles.to_be_bytes());
+            b.extend_from_slice(&s.intel_price.to_be_bytes());
+            b.extend_from_slice(&s.truce_price.to_be_bytes());
+            b.extend_from_slice(&s.truce_until.to_be_bytes());
         }
         b.push(self.scout.unwrap_or(NONE));
         b.push(self.tiles.len() as u8);
@@ -166,7 +187,10 @@ impl PlayerView {
         let aether = r.u32()?;
         let income = r.u32()?;
         let seats = (0..r.u8()?)
-            .map(|_| Some(SeatSummary { alive: r.u8()? != 0, tiles: r.u16()? }))
+            .map(|_| {
+                let f = r.u8()?;
+                Some(SeatSummary { alive: f & 1 != 0, warlord: f & 2 != 0, tiles: r.u16()?, intel_price: r.u16()?, truce_price: r.u16()?, truce_until: r.u16()? })
+            })
             .collect::<Option<Vec<_>>>()?;
         let scout = Some(r.u8()?).filter(|&s| s != NONE);
         let tiles = (0..r.u8()?)

@@ -7,7 +7,7 @@ export const INCOME = [1, 1, 1, 3, 0, 3];
 export interface VisibleTile { index: number; terrain: Terrain; owner: number | null; troops: number; fort: boolean }
 export interface BattleReport { tile: number; edgeTo: number | null; won: boolean; mineBefore: number; mineAfter: number; othersBefore: number; othersAfter: number }
 export interface Feedback { issue: number; order: number }
-export interface SeatSummary { alive: boolean; tiles: number }
+export interface SeatSummary { alive: boolean; tiles: number; warlord: boolean; intelPrice: number; trucePrice: number; truceUntil: number }
 export interface PlayerView {
   turn: number; me: number; radius: number; capital: number; alive: boolean; gameOver: boolean;
   aether: number; income: number; seats: SeatSummary[]; scout: number | null;
@@ -28,8 +28,14 @@ export const ISSUES: Record<number, string> = {
   11: 'Scout route invalid',
   12: 'Scout route cut short',
   13: 'Your scout was lost',
+  14: 'Intel bought — the island is in your view',
+  15: 'Truce bought — the warlord will hold back',
+  16: 'The warlord can’t see that island, so there was nothing to sell (nothing charged)',
+  17: 'Trade refused',
+  18: 'You attacked a warlord you had a truce with — the truce is over',
 };
-export const ORDER_LABEL = (o: number) => (o === 200 ? 'Recruit' : o === 201 ? 'Fort' : o === 202 ? 'Scout' : o === 255 ? 'All orders' : `Move ${o + 1}`);
+export const ORDER_LABEL = (o: number) =>
+  o === 200 ? 'Recruit' : o === 201 ? 'Fort' : o === 202 ? 'Scout' : o === 255 ? 'All orders' : o >= 210 && o < 255 ? `Trade ${o - 209}` : `Move ${o + 1}`;
 
 export function decodeView(bytes: Uint8Array): PlayerView {
   const n = (bytes[0] << 8) | bytes[1];
@@ -38,10 +44,13 @@ export function decodeView(bytes: Uint8Array): PlayerView {
   const u8 = () => b[i++];
   const u16 = () => { const v = (b[i] << 8) | b[i + 1]; i += 2; return v; };
   const u32 = () => { const v = ((b[i] << 24) >>> 0) + (b[i + 1] << 16) + (b[i + 2] << 8) + b[i + 3]; i += 4; return v; };
-  if (u8() !== 1) throw new Error('unknown view version');
+  if (u8() !== 2) throw new Error('unknown view version');
   const me = u8(), radius = u8(), capital = u8(), flags = u8();
   const turn = u32(), aether = u32(), income = u32();
-  const seats = Array.from({ length: u8() }, () => ({ alive: u8() !== 0, tiles: u16() }));
+  const seats = Array.from({ length: u8() }, () => {
+    const f = u8();
+    return { alive: (f & 1) !== 0, warlord: (f & 2) !== 0, tiles: u16(), intelPrice: u16(), trucePrice: u16(), truceUntil: u16() };
+  });
   const sc = u8();
   const tiles = Array.from({ length: u8() }, () => {
     const index = u8(), packed = u8(), owner = u8(), troops = u16();

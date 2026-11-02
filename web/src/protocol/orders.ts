@@ -6,9 +6,14 @@ export const ORDERS_PLAINTEXT_LEN = 1024;
 export const MAX_MOVES = 6, MAX_RECRUIT = 10, FORT_COST = 6, SCOUT_COST = 2, SCOUT_STEPS = 3;
 
 export interface Move { from: Hex; to: Hex; count: number }
-export interface Orders { moves: Move[]; scout: Hex[] | null; fort: Hex | null; recruit: number }
+export type TradeKind = { intel: { at: Hex } } | { truce: { turns: number } };
+export interface Trade { with: number; kind: TradeKind }
+export const MAX_TRADES = 2;
+export const MAX_TRUCE_TURNS = 5;
 
-export const emptyOrders = (): Orders => ({ moves: [], scout: null, fort: null, recruit: 0 });
+export interface Orders { moves: Move[]; scout: Hex[] | null; fort: Hex | null; recruit: number; trades: Trade[] }
+
+export const emptyOrders = (): Orders => ({ moves: [], scout: null, fort: null, recruit: 0, trades: [] });
 
 export function encodeOrders(o: Orders): Uint8Array {
   const json = new TextEncoder().encode(JSON.stringify(o));

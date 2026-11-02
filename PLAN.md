@@ -39,6 +39,7 @@ Scope = the core already built + four additions:
 ## Progress
 
 - **Days 1–2 done (gamepad groundwork, ahead of plan):** input action layer (`web/src/input/`), gamepad polling with radial deadzone / repeat / edge detection / hold-to-seal / hot-plug, keyboard controls, spatial focus manager for every menu, camera-relative tile cursor, pad camera, threat view, PS/Xbox glyphs, rumble, pause menu, performance mode (`?lite`). Verified with a virtual DualSense driving the real input code: intro → tutorial, and a real match (select, march, hold-to-seal resolved by the engine, unplug → pause). 17 client unit tests.
+- **Warlord economy (B, ahead of plan, on devnet):** warlords sell intel (only islands they can see) and truces (enforced by the engine, broken if you attack) for aether, at prices their own AI sets each turn; trades are inside the rules, so The Reveal verifies them. Each warlord has a USDC wallet in the contract: anyone can stake it, it pays its own Stakes buy-ins, keeps its prizes, and has no withdraw. Rules +4 tests, contract +2, end-to-end test trades every turn.
 - Still open from Part 2: the radial order menu (day 7; Square/X currently jumps to the orders panel) and testing on physical controllers (needs your pads: DualSense USB/BT, DS4, Xbox).
 
 ## Locked decisions (2026-11-01)

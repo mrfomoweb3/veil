@@ -5,8 +5,10 @@
 
 use crate::hex::Hex;
 use crate::map::rng_from;
-use crate::orders::{sanitize, Feedback, Issue, Orders, Plan, ORDER_SCOUT};
-use crate::state::{GameState, DOMINATION_PERMILLE, FORT_COST, FORT_MULT, SCALE, SCOUT_COST};
+use crate::hex::Board;
+use crate::orders::{sanitize, Feedback, Issue, Orders, Plan, TradeKind, MAX_TRADES, MAX_TRUCE_TURNS, ORDER_SCOUT, ORDER_TRADE};
+use crate::state::{GameState, DOMINATION_PERMILLE, FORT_COST, FORT_MULT, MAX_PRICE, MIN_PRICE, SCALE, SCOUT_COST};
+use crate::vision::vision;
 use rand_chacha::ChaCha20Rng;
 use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
@@ -38,6 +40,106 @@ pub struct TurnOutcome {
     pub feedback: Vec<Vec<Feedback>>,
     /// Private, per player: the tile their scout ended on, if it survived.
     pub scouts: Vec<Option<usize>>,
+    /// Private, per player: islands revealed by intel bought from a warlord.
+    #[serde(default)]
+    pub intel: Vec<Vec<usize>>,
+}
+
+/// Step 0: trades with warlords. Paid in aether before anything else, so the rest of the
+/// turn is clamped against what is left. Intel is only sold if the warlord can actually see
+/// the island; nothing is charged otherwise.
+fn trade(state: &mut GameState, board: &Board, orders: &[Orders], out: &mut TurnOutcome) {
+    let n = state.players.len();
+    let turn = state.turn;
+    let sight: Vec<Vec<bool>> = (0..n as u8).map(|w| vision(state, board, w, None)).collect();
+    for (p, o) in orders.iter().enumerate() {
+        if !state.players[p].alive {
+            continue;
+        }
+        for (k, t) in o.trades.iter().enumerate() {
+            let order = ORDER_TRADE + k.min(40) as u8;
+            let fb = |issue| Feedback { issue, order };
+            let w = t.with as usize;
+            let ok_partner = k < MAX_TRADES && w < n && w != p && state.players[w].warlord && state.players[w].alive;
+            if !ok_partner {
+                out.feedback[p].push(fb(Issue::TradeRefused));
+                continue;
+            }
+            let prices = state.players[w].prices;
+            match &t.kind {
+                TradeKind::Intel { at } => {
+                    let Some(i) = board.index(*at) else {
+                        out.feedback[p].push(fb(Issue::TradeRefused));
+                        continue;
+                    };
+                    if !sight[w][i] {
+                        out.feedback[p].push(fb(Issue::TradeUnknown));
+                        continue;
+                    }
+                    if state.players[p].aether < prices.intel {
+                        out.feedback[p].push(fb(Issue::NotEnoughAether));
+                        continue;
+                    }
+                    state.players[p].aether -= prices.intel;
+                    state.players[w].aether += prices.intel;
+                    let around = at.neighbors().into_iter().filter_map(|h| board.index(h)).filter(|&j| sight[w][j]);
+                    out.intel[p].push(i);
+                    out.intel[p].extend(around);
+                    out.feedback[p].push(fb(Issue::IntelBought));
+                }
+                TradeKind::Truce { turns } => {
+                    let turns = (*turns).clamp(1, MAX_TRUCE_TURNS);
+                    let cost = prices.truce * turns;
+                    if state.players[p].aether < cost {
+                        out.feedback[p].push(fb(Issue::NotEnoughAether));
+                        continue;
+                    }
+                    state.players[p].aether -= cost;
+                    state.players[w].aether += cost;
+                    let until = turn + turns - 1;
+                    let truces = &mut state.players[w].truces;
+                    match truces.iter_mut().find(|(b, _)| *b as usize == p) {
+                        Some(e) => e.1 = e.1.max(until),
+                        None => truces.push((p as u8, until)),
+                    }
+                    out.feedback[p].push(fb(Issue::TruceBought));
+                }
+            }
+        }
+    }
+    // Warlords set what they will charge from next turn.
+    for (w, o) in orders.iter().enumerate() {
+        if let (true, Some(pr)) = (state.players[w].warlord, o.prices) {
+            state.players[w].prices.intel = pr.intel.clamp(MIN_PRICE, MAX_PRICE);
+            state.players[w].prices.truce = pr.truce.clamp(MIN_PRICE, MAX_PRICE);
+        }
+    }
+}
+
+/// Truces bind the warlord: its moves into a buyer's islands are dropped. A buyer that
+/// attacks the warlord breaks its own truce, this very turn.
+fn enforce_truces(state: &mut GameState, plans: &mut [Plan], out: &mut TurnOutcome) {
+    let turn = state.turn;
+    for w in 0..state.players.len() {
+        if !state.players[w].warlord {
+            continue;
+        }
+        let truces = state.players[w].truces.clone();
+        let mut kept = Vec::new();
+        for (b, until) in truces {
+            if until < turn {
+                continue;
+            }
+            let attacks = plans[b as usize].moves.iter().any(|&(_, t, _)| state.tiles[t].owner == Some(w as u8));
+            if attacks {
+                out.feedback[b as usize].push(Feedback { issue: Issue::TruceBroken, order: ORDER_TRADE });
+                continue;
+            }
+            plans[w].moves.retain(|&(_, t, _)| state.tiles[t].owner != Some(b));
+            kept.push((b, until));
+        }
+        state.players[w].truces = kept;
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -117,17 +219,22 @@ pub fn resolve(state: &mut GameState, orders: &[Orders], seed: [u8; 32]) -> Turn
         reports: vec![Vec::new(); n],
         feedback: vec![Vec::new(); n],
         scouts: vec![None; n],
+        intel: vec![Vec::new(); n],
         ..Default::default()
     };
 
-    // Plans are clamped against the state as it was when the turn opened.
-    let plans: Vec<Plan> = (0..n)
+    // 0. Trades with warlords.
+    trade(state, &board, orders, &mut out);
+
+    // Plans are clamped against the state as it was when the turn opened (after trades).
+    let mut plans: Vec<Plan> = (0..n)
         .map(|p| {
             let (plan, fb) = sanitize(state, &board, p as u8, &orders[p]);
-            out.feedback[p] = fb;
+            out.feedback[p].extend(fb);
             plan
         })
         .collect();
+    enforce_truces(state, &mut plans, &mut out);
 
     // 1. Recruit, then fort; scouts pay now too.
     for (p, plan) in plans.iter().enumerate() {
@@ -326,8 +433,8 @@ mod tests {
             config: Config::default(),
             tiles,
             players: vec![
-                Player { aether: 0, alive: true, capital: Hex(-3, 0), eliminated_turn: None },
-                Player { aether: 0, alive: true, capital: Hex(3, 0), eliminated_turn: None },
+                Player { aether: 0, alive: true, capital: Hex(-3, 0), eliminated_turn: None, ..Default::default() },
+                Player { aether: 0, alive: true, capital: Hex(3, 0), eliminated_turn: None, ..Default::default() },
             ],
             game_over: false,
         };
@@ -411,4 +518,82 @@ mod tests {
         assert!(cap.fort);
         assert_eq!(s.players[0].aether, 12 - 5 - 6 + 3);
     }
+
+    fn with_warlord() -> GameState {
+        let mut s = flat();
+        s.players[1].warlord = true;
+        s.players[0].aether = 30;
+        s
+    }
+
+    #[test]
+    fn intel_is_sold_only_for_what_the_warlord_sees() {
+        use crate::orders::{Trade, TradeKind};
+        let mut s = with_warlord();
+        let b = s.board();
+        let price = s.players[1].prices.intel;
+        // (2, 0) is next to the warlord's capital: it can see it. (-1, 0) it cannot.
+        let o = Orders {
+            trades: vec![
+                Trade { with: 1, kind: TradeKind::Intel { at: Hex(2, 0) } },
+                Trade { with: 1, kind: TradeKind::Intel { at: Hex(-1, 0) } },
+            ],
+            ..Default::default()
+        };
+        let out = resolve(&mut s, &[o, Orders::default()], [0; 32]);
+        assert!(out.intel[0].contains(&b.index(Hex(2, 0)).unwrap()));
+        assert!(!out.intel[0].contains(&b.index(Hex(-1, 0)).unwrap()));
+        assert!(out.feedback[0].iter().any(|f| f.issue == Issue::IntelBought));
+        assert!(out.feedback[0].iter().any(|f| f.issue == Issue::TradeUnknown));
+        // Paid once (plus income), warlord earned it.
+        assert_eq!(s.players[0].aether, 30 - price + s.income_of(0));
+        assert_eq!(s.players[1].aether, price + s.income_of(1));
+        // The buyer's view now shows that island.
+        let v = crate::view::build_view(&s, 0, Some(&out), &[]);
+        assert!(v.tiles.iter().any(|t| t.index as usize == b.index(Hex(2, 0)).unwrap()));
+        assert!(v.seats[1].warlord);
+    }
+
+    #[test]
+    fn trades_with_humans_or_yourself_are_refused() {
+        use crate::orders::{Trade, TradeKind};
+        let mut s = flat();
+        s.players[0].aether = 30;
+        let o = Orders { trades: vec![Trade { with: 1, kind: TradeKind::Truce { turns: 2 } }], ..Default::default() };
+        let out = resolve(&mut s, &[o, Orders::default()], [0; 32]);
+        assert!(out.feedback[0].iter().any(|f| f.issue == Issue::TradeRefused));
+        assert_eq!(s.players[0].aether, 30 + s.income_of(0));
+    }
+
+    #[test]
+    fn a_truce_stops_the_warlord_and_attacking_breaks_it() {
+        use crate::orders::{Trade, TradeKind};
+        let mut s = with_warlord();
+        put(&mut s, Hex(0, 0), 0, 3);
+        put(&mut s, Hex(1, 0), 1, 20);
+        let buy = Orders { trades: vec![Trade { with: 1, kind: TradeKind::Truce { turns: 3 } }], ..Default::default() };
+        let attack = Orders { moves: vec![Move { from: Hex(1, 0), to: Hex(0, 0), count: 19 }], ..Default::default() };
+        resolve(&mut s, &[buy, attack.clone()], [2; 32]);
+        let b = s.board();
+        assert_eq!(s.tile(&b, Hex(0, 0)).unwrap().owner, Some(0), "the warlord's attack was called off");
+        assert_eq!(s.players[1].truces, vec![(0, 3)]);
+
+        // Turn 2: the buyer attacks the warlord, so the truce breaks and the warlord strikes back.
+        let betray = Orders { moves: vec![Move { from: Hex(0, 0), to: Hex(1, 0), count: 1 }], ..Default::default() };
+        let out = resolve(&mut s, &[betray, attack], [4; 32]);
+        assert!(out.feedback[0].iter().any(|f| f.issue == Issue::TruceBroken));
+        assert!(s.players[1].truces.is_empty());
+        assert_eq!(s.tile(&b, Hex(0, 0)).unwrap().owner, Some(1));
+    }
+
+    #[test]
+    fn only_warlords_set_prices() {
+        use crate::state::Prices;
+        let mut s = with_warlord();
+        let p = Some(Prices { intel: 9, truce: 500 });
+        resolve(&mut s, &[Orders { prices: p, ..Default::default() }, Orders { prices: p, ..Default::default() }], [0; 32]);
+        assert_eq!(s.players[0].prices, Prices::default());
+        assert_eq!(s.players[1].prices, Prices { intel: 9, truce: crate::state::MAX_PRICE });
+    }
+
 }

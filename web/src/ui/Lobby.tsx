@@ -19,6 +19,7 @@ export function Lobby() {
   const [buyIn, setBuyIn] = useState(1);
   const [usdc, setUsdc] = useState<string | null>(null);
   const [balance, setBalance] = useState('0');
+  const [warlords, setWarlords] = useState<[string, { treasury: string; played: number; won: number; staked: string; earned: string }][]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -28,7 +29,8 @@ export function Lobby() {
         chain.view<string>('get_balance', { account: chain.account }),
       ]);
       if (chain.network === 'devnet') setUsdc(await chain.view<string>('usdc_balance', { account: chain.account }));
-      if (alive) { setMatches(all.reverse()); setBalance(bal); }
+      const lords = await chain.view<typeof warlords>('get_warlords').catch(() => []);
+      if (alive) { setMatches(all.reverse()); setBalance(bal); setWarlords(lords); }
     };
     load().catch((e) => setErr(e.message));
     const t = setInterval(() => load().catch(() => {}), 3000);
@@ -87,6 +89,19 @@ export function Lobby() {
           {chain.network === 'devnet' && <button className="link" disabled={busy} onClick={() => act(() => chain.call('faucet'))}>+ $10 play-money USDC (devnet faucet)</button>}
           {balance !== '0' && <button className="link" disabled={busy} onClick={() => act(() => chain.call('claim'))}>Claim {usd(balance)} winnings / refunds</button>}
           {err && <div className="err">{err}</div>}
+        </section>
+
+        <section className="panel warlords">
+          <h2>Warlord wallets</h2>
+          <p className="muted small">Each AI warlord holds its own USDC. It pays its own Stakes buy-ins and keeps what it wins. Nobody can withdraw it — not even us. Anyone can stake one.</p>
+          {warlords.map(([id, b], k) => (
+            <div key={id} className="match-row lord-row">
+              <b>{['The Cautious Admiral', 'The Raider', 'The Opportunist'][(k + 1) % 3]}</b>
+              <span>{usd(b.treasury)}</span>
+              <span className="muted small">{b.won}W / {b.played} played · won {usd(b.earned)}</span>
+              <button className="small" disabled={busy} onClick={() => act(() => chain.call('ft_transfer_call', { amount: '1000000', msg: JSON.stringify({ fund_warlord: id }) }))}>Stake $1</button>
+            </div>
+          ))}
         </section>
 
         <section className="panel">

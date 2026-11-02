@@ -21,7 +21,7 @@ describe('crypto', () => {
   });
 
   it('pads orders to a fixed size', () => {
-    expect(encodeOrders({ moves: [], scout: null, fort: null, recruit: 3 }).length).toBe(1024);
+    expect(encodeOrders({ moves: [], scout: null, fort: null, recruit: 3, trades: [] }).length).toBe(1024);
   });
 });
 

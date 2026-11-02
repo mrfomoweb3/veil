@@ -4,7 +4,7 @@
 //! that player's own (encrypted) view. Errors would leak information.
 
 use crate::hex::{Board, Hex};
-use crate::state::{GameState, FORT_COST, MAX_MOVES, MAX_RECRUIT, SCOUT_COST, SCOUT_MAX_STEPS};
+use crate::state::{GameState, Prices, FORT_COST, MAX_MOVES, MAX_RECRUIT, SCOUT_COST, SCOUT_MAX_STEPS};
 use serde::{Deserialize, Serialize};
 
 /// Orders are padded to this many bytes before encryption so ciphertext length says nothing.
@@ -17,6 +17,26 @@ pub struct Move {
     pub count: u32,
 }
 
+/// What you can buy from a warlord.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TradeKind {
+    /// Reveal this island (and its neighbours) if the warlord can see it.
+    Intel { at: Hex },
+    /// The warlord won't move into your islands for this many turns (this one included).
+    Truce { turns: u32 },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Trade {
+    /// The warlord's seat.
+    pub with: u8,
+    pub kind: TradeKind,
+}
+
+pub const MAX_TRADES: usize = 2;
+pub const MAX_TRUCE_TURNS: u32 = 5;
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Orders {
     #[serde(default)]
@@ -27,11 +47,17 @@ pub struct Orders {
     pub fort: Option<Hex>,
     #[serde(default)]
     pub recruit: u32,
+    /// Purchases from warlords, paid in aether before anything else this turn.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub trades: Vec<Trade>,
+    /// Warlords only: the prices they will charge from next turn.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prices: Option<Prices>,
 }
 
 impl Orders {
     pub fn is_empty(&self) -> bool {
-        self.moves.is_empty() && self.scout.is_none() && self.fort.is_none() && self.recruit == 0
+        self.moves.is_empty() && self.scout.is_none() && self.fort.is_none() && self.recruit == 0 && self.trades.is_empty()
     }
 
     /// `u16` big-endian length, the JSON, zero padding to `ORDERS_PLAINTEXT_LEN`.
@@ -74,6 +100,14 @@ pub enum Issue {
     ScoutInvalid = 11,
     ScoutTruncated = 12,
     ScoutLost = 13,
+    IntelBought = 14,
+    TruceBought = 15,
+    /// The warlord can't see that island, so there was nothing to sell (nothing charged).
+    TradeUnknown = 16,
+    /// Not a living warlord, a bad request, or too many trades.
+    TradeRefused = 17,
+    /// You attacked a warlord you had a truce with: the truce is over.
+    TruceBroken = 18,
 }
 
 impl Issue {
@@ -93,6 +127,11 @@ impl Issue {
             11 => ScoutInvalid,
             12 => ScoutTruncated,
             13 => ScoutLost,
+            14 => IntelBought,
+            15 => TruceBought,
+            16 => TradeUnknown,
+            17 => TradeRefused,
+            18 => TruceBroken,
             _ => return None,
         })
     }
@@ -103,6 +142,8 @@ pub const ORDER_RECRUIT: u8 = 200;
 pub const ORDER_FORT: u8 = 201;
 pub const ORDER_SCOUT: u8 = 202;
 pub const ORDER_ALL: u8 = 255;
+/// Trades are numbered from here (210 = first trade).
+pub const ORDER_TRADE: u8 = 210;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Feedback {

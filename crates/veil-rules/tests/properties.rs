@@ -124,6 +124,7 @@ proptest! {
             scout: Some(vec![Hex(0, 0), Hex(1, 0), Hex(2, 0)]),
             fort: Some(Hex(-1, 2)),
             recruit,
+            ..Default::default()
         };
         let b = o.to_padded().unwrap();
         prop_assert_eq!(b.len(), veil_rules::orders::ORDERS_PLAINTEXT_LEN);
@@ -140,6 +141,7 @@ proptest! {
             scout: Some(qs.iter().map(|&(a, b, _, _, _)| Hex(a, b)).collect()),
             fort: qs.first().map(|&(a, b, _, _, _)| Hex(a, b)),
             recruit,
+            ..Default::default()
         };
         let out = resolve(&mut st, &[o, Orders::default()], seed_from(seed, 1));
         prop_assert!(st.players[0].aether <= before.players[0].aether + st.income_of(0));

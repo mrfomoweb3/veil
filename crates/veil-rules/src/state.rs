@@ -82,13 +82,39 @@ pub struct Tile {
     pub fort: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// What a warlord charges, in aether. Warlords set these each turn; everyone can see them.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Prices {
+    /// One look under the clouds: an island the warlord can see, and its neighbours.
+    pub intel: u32,
+    /// Per turn of protection: the warlord won't move into your islands.
+    pub truce: u32,
+}
+
+impl Default for Prices {
+    fn default() -> Self {
+        Prices { intel: 4, truce: 3 }
+    }
+}
+
+pub const MIN_PRICE: u32 = 1;
+pub const MAX_PRICE: u32 = 40;
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Player {
     pub aether: u32,
     pub alive: bool,
     pub capital: Hex,
     /// Turn this player was eliminated on (ranking tiebreak), if any.
     pub eliminated_turn: Option<u32>,
+    /// An AI warlord seat: it sells intel and truces to the other players.
+    #[serde(default)]
+    pub warlord: bool,
+    #[serde(default)]
+    pub prices: Prices,
+    /// Truces this warlord has sold: (buyer, last protected turn).
+    #[serde(default)]
+    pub truces: Vec<(u8, u32)>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

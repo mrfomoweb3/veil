@@ -1,7 +1,7 @@
 // Drafting orders locally and sealing them for the enclave.
 import { useStore } from '../store';
 import { Board, hexDistance, sameHex, type Hex } from '../protocol/hex';
-import { encodeOrders, FORT_COST, MAX_MOVES, MAX_RECRUIT, SCOUT_COST, SCOUT_STEPS } from '../protocol/orders';
+import { encodeOrders, FORT_COST, MAX_MOVES, MAX_RECRUIT, MAX_TRADES, SCOUT_COST, SCOUT_STEPS, type Trade } from '../protocol/orders';
 import { fromHex, INFO_ORDERS, ordersAad, seal, toB64 } from '../protocol/crypto';
 import { Terrain } from '../protocol/view';
 
@@ -14,9 +14,32 @@ export function tileAt(i: number) {
   return useStore.getState().view?.tiles.find((t) => t.index === i) ?? null;
 }
 
+/** What a trade will cost at the warlord's current (public) prices. */
+export function tradeCost(t: Trade) {
+  const seat = useStore.getState().view?.seats[t.with];
+  if (!seat) return 0;
+  return 'intel' in t.kind ? seat.intelPrice : seat.trucePrice * t.kind.truce.turns;
+}
+
 export function spent() {
   const { draft } = useStore.getState();
-  return draft.recruit + (draft.fort ? FORT_COST : 0) + (draft.scout ? SCOUT_COST : 0);
+  return draft.recruit + (draft.fort ? FORT_COST : 0) + (draft.scout ? SCOUT_COST : 0) + draft.trades.reduce((n, t) => n + tradeCost(t), 0);
+}
+
+/** Add a trade to the draft if there is room and aether for it. */
+export function addTrade(t: Trade) {
+  const st = useStore.getState();
+  const v = st.view;
+  if (!v) return false;
+  if (st.draft.trades.length >= MAX_TRADES) { st.push(`At most ${MAX_TRADES} trades per turn.`, 'bad'); return false; }
+  if (spent() + tradeCost(t) > v.aether) { st.push('Not enough aether for that trade.', 'bad'); return false; }
+  st.set({ draft: { ...st.draft, trades: [...st.draft.trades, t] } });
+  return true;
+}
+
+export function removeTrade(k: number) {
+  const st = useStore.getState();
+  st.set({ draft: { ...st.draft, trades: st.draft.trades.filter((_, j) => j !== k) } });
 }
 
 /** Troops that can still leave tile `i` this turn given the draft (recruits appear at the capital). */
@@ -51,6 +74,13 @@ export function clickTile(i: number) {
   if (!view || !board || !view.alive || match?.status !== 'Running') return;
   const mine = tileAt(i)?.owner === view.me;
   const h = board.hex(i);
+
+  if (tool === 'intel') {
+    const w = st.intelFrom;
+    if (w == null) return st.set({ tool: 'move' });
+    if (addTrade({ with: w, kind: { intel: { at: h } } })) st.push(`Intel on ${fmtHex(h)} ordered — paid only if the warlord can see it.`, 'info');
+    return st.set({ tool: 'move', intelFrom: null });
+  }
 
   if (tool === 'fort') {
     if (!mine) return st.push('Forts can only be raised on your own islands.', 'bad');

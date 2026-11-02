@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../store';
 import { useMatchSync, seatName } from '../game/sync';
-import { available, clickTile, fmtHex, moveTargets, removeMove, sendOrders, setMoveCount, setRecruit, spent } from '../game/actions';
+import { addTrade, available, clickTile, fmtHex, moveTargets, removeMove, removeTrade, sendOrders, setMoveCount, setRecruit, spent, tradeCost } from '../game/actions';
 import { World } from '../scene/World';
 import { Islands } from '../scene/Islands';
 import { FogClouds } from '../scene/Sky';
@@ -223,12 +223,54 @@ function OrdersPanel() {
         {draft.scout && <li><span>Scout: {draft.scout.map(fmtHex).join(' → ')}</span><button className="small x" onClick={() => set({ draft: { ...draft, scout: null } })}>×</button></li>}
         {draft.fort && <li><span>Fort at {fmtHex(draft.fort)}</span><button className="small x" onClick={() => set({ draft: { ...draft, fort: null } })}>×</button></li>}
       </ul>
+      <Market />
       <button className="primary seal" disabled={busy || locked} onClick={send} style={{ ['--hold' as string]: `${Math.round(endHold * 100)}%` }}>
         {locked ? 'Resolving…' : submittedTurn === match.turn ? '🔒 Sealed — update orders' : '🔒 Seal & send orders'} <Glyph h="endTurn" />
       </button>
       <p className="muted small">Sealed in your browser to the enclave’s key for this match. The chain stores only ciphertext.</p>
       {err && <div className="err">{err}</div>}
     </aside>
+  );
+}
+
+function Market() {
+  const { view, match, chain, draft, set, tool, intelFrom } = useStore();
+  if (!view || !match) return null;
+  const lords = view.seats.map((s, i) => ({ s, i })).filter((x) => x.s.warlord && x.s.alive && x.i !== view.me);
+  if (!lords.length) return null;
+  return (
+    <div className="market">
+      <h3>Warlord market</h3>
+      {lords.map(({ s, i }) => (
+        <div className="lord" key={i}>
+          <div className="lord-name">
+            <i className="dot" style={{ background: seatColor(i) }} /> <b>{seatName(match, i, chain?.account)}</b>
+            {s.truceUntil >= match.turn && <span className="truce">🤝 truce through turn {s.truceUntil}</span>}
+          </div>
+          <div className="deals">
+            <button className={`small ${tool === 'intel' && intelFrom === i ? 'on' : ''}`} onClick={() => set({ tool: 'intel', intelFrom: i, selected: null })} title="Reveal an island this warlord can see, and its neighbours">
+              👁 Intel · {s.intelPrice}
+            </button>
+            {[1, 3].map((t) => (
+              <button key={t} className="small" onClick={() => addTrade({ with: i, kind: { truce: { turns: t } } })} title="It won't move into your islands. Attack it and the truce ends.">
+                🤝 {t} turn{t > 1 ? 's' : ''} · {s.trucePrice * t}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      {tool === 'intel' && <p className="hint">Pick an island under the clouds. You only pay if the warlord can actually see it.</p>}
+      {draft.trades.length > 0 && (
+        <ul className="moves">
+          {draft.trades.map((t, k) => (
+            <li key={k}>
+              <span>{'intel' in t.kind ? `Intel on ${fmtHex(t.kind.intel.at)}` : `Truce, ${t.kind.truce.turns} turn${t.kind.truce.turns > 1 ? 's' : ''}`} · {seatName(match, t.with, chain?.account)} · {tradeCost(t)}</span>
+              <button className="small x" onClick={() => removeTrade(k)}>×</button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 

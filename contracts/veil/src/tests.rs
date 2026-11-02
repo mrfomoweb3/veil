@@ -223,3 +223,54 @@ fn autopilot_after_three_misses_and_reclaim() {
     c.claim_seat_back(id);
     assert!(!c.get_match(id).unwrap().seats[0].autopilot);
 }
+
+#[test]
+fn warlords_have_wallets_that_only_matches_move() {
+    let mut c = contract();
+    // Anyone can stake a warlord; unknown names are refunded.
+    ctx("usdc.near", 0, 1_000);
+    assert_eq!(c.ft_on_transfer(acc("sponsor.near"), U128(3_000_000), json!({ "fund_warlord": "warlord-1.veil" }).to_string()), U128(0));
+    assert_eq!(c.ft_on_transfer(acc("sponsor.near"), U128(5), json!({ "fund_warlord": "alice.near" }).to_string()), U128(5));
+    assert_eq!(c.get_warlords()[0].1.treasury, U128(3_000_000));
+
+    // A $1 stakes match: alice vs warlord-1 (funded) and warlord-2 (broke).
+    ctx("host.near", 0, 1_000);
+    let id = c.create_match(Mode::Stakes { buy_in: U128(1_000_000) }, 3, 45_000, 2, Some(1));
+    ctx("usdc.near", 0, 1_000);
+    assert_eq!(c.ft_on_transfer(acc("alice.near"), U128(1_000_000), json!({ "join": id, "view_pk": PK }).to_string()), U128(0));
+    ctx("host.near", 1, 2_000);
+    let _ = c.start(id);
+    let m = c.get_match(id).unwrap();
+    assert_eq!(m.seats[1].paid, U128(1_000_000), "warlord-1 paid its own buy-in");
+    assert_eq!(m.seats[2].paid, U128(0), "warlord-2 could not afford it and plays for nothing");
+    assert_eq!(m.pot, U128(2_000_000));
+    assert_eq!(c.get_warlords()[0].1.treasury, U128(2_000_000));
+
+    apply(&mut c, 2_000, id, "init", 0, Some(engine_out(0, &format!("init-{id}"), &["alice.near"], false, None)));
+    ctx("x.near", 1, 100_000);
+    let _ = c.resolve_turn(id);
+    // Warlord-1 wins: the prize (pot minus 5 % rake) lands in its wallet, not with the owner.
+    apply(&mut c, 100_000, id, "resolve", 1, Some(engine_out(1, "turn-1", &["alice.near"], true, Some(vec![1, 0, 2]))));
+    let w = c.get_warlords();
+    assert_eq!(w[0].1.treasury, U128(2_000_000 + 1_900_000));
+    assert_eq!((w[0].1.played, w[0].1.won, w[0].1.earned), (1, 1, U128(1_900_000)));
+    assert_eq!((w[1].1.played, w[1].1.won), (1, 0));
+    assert_eq!(c.get_balance(acc("alice.near")), U128(0));
+}
+
+#[test]
+fn a_failed_start_refunds_the_warlords() {
+    let mut c = contract();
+    ctx("usdc.near", 0, 1_000);
+    c.ft_on_transfer(acc("sponsor.near"), U128(1_000_000), json!({ "fund_warlord": "warlord-1.veil" }).to_string());
+    ctx("host.near", 0, 1_000);
+    let id = c.create_match(Mode::Stakes { buy_in: U128(1_000_000) }, 2, 45_000, 1, None);
+    ctx("usdc.near", 0, 1_000);
+    c.ft_on_transfer(acc("alice.near"), U128(1_000_000), json!({ "join": id, "view_pk": PK }).to_string());
+    ctx("host.near", 1, 2_000);
+    let _ = c.start(id);
+    apply(&mut c, 2_000, id, "init", 0, None);
+    let m = c.get_match(id).unwrap();
+    assert_eq!((m.status, m.pot), (Status::Lobby, U128(1_000_000)));
+    assert_eq!(c.get_warlords()[0].1.treasury, U128(1_000_000));
+}

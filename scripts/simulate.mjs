@@ -49,7 +49,7 @@ function decodeView(bytes) {
   const u8 = () => b[i++], u16 = () => { const v = (b[i] << 8) | b[i + 1]; i += 2; return v; }, u32 = () => { const v = b.readUInt32BE(i); i += 4; return v; };
   u8(); const me = u8(), radius = u8(), capital = u8(); u8();
   const turn = u32(), aether = u32(), income = u32();
-  const seats = Array.from({ length: u8() }, () => ({ alive: !!u8(), tiles: u16() })); u8();
+  const seats = Array.from({ length: u8() }, () => { const f = u8(); return { alive: !!(f & 1), warlord: !!(f & 2), tiles: u16(), intel: u16(), truce: u16(), truceUntil: u16() }; }); u8();
   const tiles = Array.from({ length: u8() }, () => { const index = u8(), p = u8(), o = u8(); return { index, terrain: p & 7, owner: o === 255 ? null : o, troops: u16() }; });
   return { me, radius, capital, turn, aether, income, seats, tiles };
 }
@@ -69,7 +69,15 @@ function planOrders(v) {
     const target = options.sort((a, b) => a.troops - b.troops)[0];
     if (target && troops - 1 > target.troops * 1.6) moves.push({ from: h, to: hs[target.index], count: troops - 1 });
   }
-  return { moves, scout: null, fort: null, recruit: Math.min(10, v.aether) };
+  // Trade: a 1-turn truce with the first warlord when we can afford it, else intel on the board centre.
+  const trades = [];
+  const lord = v.seats.findIndex((x, i) => x.warlord && x.alive && i !== v.me);
+  let budget = v.aether;
+  if (lord >= 0) {
+    if (v.turn % 2 === 0 && budget >= v.seats[lord].truce) { trades.push({ with: lord, kind: { truce: { turns: 1 } } }); budget -= v.seats[lord].truce; }
+    else if (budget >= v.seats[lord].intel) { trades.push({ with: lord, kind: { intel: { at: [0, 0] } } }); budget -= v.seats[lord].intel; }
+  }
+  return { moves, scout: null, fort: null, recruit: Math.min(10, budget), trades };
 }
 
 const sk = x25519.utils.randomPrivateKey();
@@ -90,7 +98,8 @@ for (;;) {
     const pt = open(sk, Buffer.from(v.ciphertext, 'base64'), enc.encode(`veil-view|${id}|${v.turn}|${me}`), enc.encode('veil-view-v1'));
     const pv = decodeView(Buffer.from(pt));
     const mine = pv.tiles.filter((t) => t.owner === pv.me);
-    console.log(`  turn ${pv.turn}: I see ${pv.tiles.length} tiles, hold ${mine.length}, troops ${mine.reduce((s, t) => s + t.troops, 0)}, aether ${pv.aether}; scoreboard ${pv.seats.map((s) => (s.alive ? s.tiles : 'x')).join('/')}`);
+    const lord = pv.seats.find((x) => x.warlord);
+    console.log(`  turn ${pv.turn}: I see ${pv.tiles.length} tiles, hold ${mine.length}, troops ${mine.reduce((s, t) => s + t.troops, 0)}, aether ${pv.aether}; scoreboard ${pv.seats.map((s) => (s.alive ? s.tiles : 'x')).join('/')}; warlord prices intel ${lord?.intel} truce ${lord?.truce}${pv.seats.some((x) => x.truceUntil >= pv.turn + 1) ? ' · truce active' : ''}`);
     if (m.status === 'Running') {
       const json = enc.encode(JSON.stringify(planOrders(pv)));
       const padded = new Uint8Array(1024); padded[0] = json.length >> 8; padded[1] = json.length & 255; padded.set(json, 2);

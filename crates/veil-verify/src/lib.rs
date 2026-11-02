@@ -93,7 +93,17 @@ pub fn verify(
     let seats = doc.accounts.len();
     match check_vrf(&doc.init.vrf, vrf_pubkey, &format!("init-{}", doc.match_id)) {
         Ok(seed) => {
-            let regenerated = generate(doc.match_id, seats, doc.init.state.config.clone(), seed);
+            let mut regenerated = generate(doc.match_id, seats, doc.init.state.config.clone(), seed);
+            // AI seats are warlords from the start; they must be exactly the seats that
+            // played as AI on turn 1.
+            for (p, pl) in regenerated.players.iter_mut().enumerate() {
+                pl.warlord = doc.init.state.players.get(p).is_some_and(|x| x.warlord);
+            }
+            if let Some(t1) = doc.turns.first() {
+                if regenerated.players.iter().zip(&t1.ai).any(|(pl, ai)| pl.warlord != *ai) {
+                    err(&mut r, "warlord seats do not match the AI seats of turn 1".into());
+                }
+            }
             if regenerated != doc.init.state {
                 err(&mut r, "opening map does not match the init VRF output".into());
             }
