@@ -28,6 +28,17 @@ impl Personality {
         }
     }
 
+    /// A warlord's personality belongs to its wallet (`warlord-K.veil`), not to the seat it
+    /// happens to sit in; anyone else on autopilot plays by seat.
+    pub fn for_account(account: &str, seat: u8) -> Personality {
+        account
+            .strip_prefix("warlord-")
+            .and_then(|r| r.strip_suffix(".veil"))
+            .and_then(|k| k.parse::<u8>().ok())
+            .map(Personality::for_seat)
+            .unwrap_or(Personality::for_seat(seat))
+    }
+
     pub fn title(self) -> &'static str {
         match self {
             Personality::Admiral => "the Cautious Admiral",

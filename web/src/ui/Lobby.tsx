@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import type { Match } from '../chain/types';
 import { createMatch, joinMatch, openMatch } from './lobbyActions';
+import { WARLORDS, warlordName } from '../game/warlords';
 
 const usd = (micro: string) => `$${(Number(micro) / 1e6).toFixed(2)}`;
 
@@ -94,9 +95,9 @@ export function Lobby() {
         <section className="panel warlords">
           <h2>Warlord wallets</h2>
           <p className="muted small">Each AI warlord holds its own USDC. It pays its own Stakes buy-ins and keeps what it wins. Nobody can withdraw it — not even us. Anyone can stake one.</p>
-          {warlords.map(([id, b], k) => (
+          {warlords.map(([id, b]) => (
             <div key={id} className="match-row lord-row">
-              <b>{['The Cautious Admiral', 'The Raider', 'The Opportunist'][(k + 1) % 3]}</b>
+              <b title={WARLORDS[id]?.style}>{warlordName(id)}</b>
               <span>{usd(b.treasury)}</span>
               <span className="muted small">{b.won}W / {b.played} played · won {usd(b.earned)}</span>
               <button className="small" disabled={busy} onClick={() => act(() => chain.call('ft_transfer_call', { amount: '1000000', msg: JSON.stringify({ fund_warlord: id }) }))}>Stake $1</button>

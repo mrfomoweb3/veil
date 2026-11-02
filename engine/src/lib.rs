@@ -196,7 +196,7 @@ fn resolve_turn(host: &mut impl Host, id: u64, turn: u32, seats: &[SeatIn]) -> R
         if seat.ai {
             let view = build_view(&state, p as u8, None, &[]);
             let (o, used_llm) =
-                ai::ai_orders(host, &view, Personality::for_seat(p as u8), started + AI_TURN_BUDGET_MS);
+                ai::ai_orders(host, &view, Personality::for_account(&seat.account, p as u8), started + AI_TURN_BUDGET_MS);
             orders[p] = o;
             llm[p] = used_llm;
             continue;

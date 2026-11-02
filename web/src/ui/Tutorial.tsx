@@ -295,7 +295,7 @@ export function Tutorial() {
         {step === 'ready' && (
           <>
             <h2>You’re ready.</h2>
-            <p>Three AI warlords are waiting: the Cautious Admiral, the Raider and the Opportunist. Same fog, same rules, same dice as you.</p>
+            <p>Three AI warlords are waiting: Kael the Raider, Vesk the Opportunist and Admiral Orra. Same fog, same rules, same dice as you — and they’ll sell you intel or a truce, at their price.</p>
             <div className="cta">
               <button className="primary big" disabled={busy || !chain} onClick={finish}>{busy ? 'Raising the islands…' : '⚔ Play vs 3 warlords'}</button>
               <button className="ghost" onClick={() => { markTutorialDone(); set({ screen: 'lobby' }); }}>Lobbies</button>

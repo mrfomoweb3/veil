@@ -8,6 +8,7 @@ import { Board } from '../protocol/hex';
 import { emptyOrders } from '../protocol/orders';
 import { loadMemory, saveMemory, viewKey } from '../session';
 import { rumble } from '../input/rumble';
+import { warlordName } from './warlords';
 
 const hexLabel = (h: [number, number]) => `(${h[0]}, ${h[1]})`;
 
@@ -15,7 +16,7 @@ export function seatName(m: Match | null, i: number, me?: string) {
   const s = m?.seats[i];
   if (!s) return `Seat ${i + 1}`;
   if (s.account === me) return 'You';
-  if (s.ai) return ['The Cautious Admiral', 'The Raider', 'The Opportunist'][i % 3];
+  if (s.ai) return warlordName(s.account);
   return s.account.length > 22 ? s.account.slice(0, 10) + '…' + s.account.slice(-6) : s.account;
 }
 
