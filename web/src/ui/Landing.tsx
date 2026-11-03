@@ -43,6 +43,8 @@ export function Landing() {
           <button className="link" disabled={!chain || busy} onClick={quick}>{busy ? 'Raising the islands…' : 'Skip the tutorial — quick match'}</button>
           <span>·</span>
           <button className="link" disabled={!chain} onClick={() => set({ screen: 'lobby' })}>Lobbies</button>
+          <span>·</span>
+          <button className="link" disabled={!chain} onClick={() => set({ screen: 'vault' })}>Private vault</button>
         </div>
         <p className="intro-tag">A strategy game where even the developer can’t see the map.</p>
         <p className="pad-hint">{pad ? `🎮 ${family === 'playstation' ? 'PlayStation' : family === 'xbox' ? 'Xbox' : ''} controller ready` : '🎮 Controller? Press any button on it'}</p>

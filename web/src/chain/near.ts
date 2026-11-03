@@ -29,6 +29,7 @@ export class NearChain implements Chain {
     readonly account: string,
     private readonly acct: Account,
     private readonly provider: providers.JsonRpcProvider,
+    private readonly keyPair: KeyPair,
   ) {}
 
   static async connect(network: 'testnet' | 'mainnet'): Promise<NearChain> {
@@ -47,9 +48,14 @@ export class NearChain implements Chain {
     const provider = new providers.JsonRpcProvider({ url: RPC[network] });
     const connection = new Connection(network, provider, new InMemorySigner(store), '');
     const acct = new Account(connection, accountId);
-    const chain = new NearChain(network, accountId, acct, provider);
+    const chain = new NearChain(network, accountId, acct, provider, keyPair);
     await chain.onboard(pk.toString());
     return chain;
+  }
+
+  async signVaultMessage() {
+    const { vaultMessageHash } = await import('../privacy/nep413');
+    return this.keyPair.sign(vaultMessageHash()).signature;
   }
 
   /** Ask the relayer to create (fund) our implicit account if it doesn't exist yet. */

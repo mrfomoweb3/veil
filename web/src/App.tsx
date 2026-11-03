@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { connect } from './chain';
 import type { Config } from './chain/types';
 import { useStore } from './store';
@@ -8,6 +8,8 @@ import { MatchScreen } from './ui/MatchScreen';
 import { Reveal } from './ui/Reveal';
 import { Tutorial } from './ui/Tutorial';
 import { PauseMenu } from './ui/PauseMenu';
+
+const VaultPanel = lazy(() => import('./ui/vault/VaultPanel').then((m) => ({ default: m.VaultPanel })));
 import { startGamepad } from './input/gamepad';
 import { startKeyboard } from './input/keyboard';
 import { startPointerTracking } from './input/inputMode';
@@ -38,6 +40,7 @@ export function App() {
       {screen === 'lobby' && chain && <Lobby />}
       {screen === 'match' && <MatchScreen />}
       {screen === 'reveal' && <Reveal />}
+      {screen === 'vault' && chain && <Suspense fallback={<div className="banner">Opening the vault…</div>}><VaultPanel /></Suspense>}
       {err && screen !== 'match' && <div className="banner bad">{err}</div>}
       <PauseMenu />
     </>

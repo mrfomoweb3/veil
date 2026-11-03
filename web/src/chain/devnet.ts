@@ -27,6 +27,20 @@ export class DevnetChain implements Chain {
     return () => es.close();
   }
 
+  /** Devnet accounts have no NEAR key, so a local ed25519 key stands in for the wallet. */
+  async signVaultMessage() {
+    const [{ ed25519 }, { vaultMessageHash }] = await Promise.all([import('@noble/curves/ed25519'), import('../privacy/nep413')]);
+    const k = `veil:devnet:vault-sk:${this.account}`;
+    let hex = '';
+    try { hex = localStorage.getItem(k) ?? ''; } catch { /* storage blocked */ }
+    if (!hex) {
+      hex = Array.from(ed25519.utils.randomPrivateKey(), (b) => b.toString(16).padStart(2, '0')).join('');
+      try { localStorage.setItem(k, hex); } catch { /* ignore */ }
+    }
+    const sk = Uint8Array.from(hex.match(/../g)!, (b) => parseInt(b, 16));
+    return ed25519.sign(vaultMessageHash(), sk);
+  }
+
   async publicStorage(key: string) {
     const r = await fetch(`${this.api}/api/public/storage/get?key=${encodeURIComponent(key)}`);
     return r.ok ? new Uint8Array(await r.arrayBuffer()) : null;

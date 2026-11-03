@@ -82,16 +82,37 @@ const handlers = {
   },
 };
 
+// Gloam's relay sends no CORS headers, so browsers reach it through here. Only already-proven
+// cash-outs and private sends pass, verbatim: the proof fixes the recipient, so neither hop
+// can redirect money, and the answer goes back unchanged in the SDK's own shape.
+const GLOAM_RELAY = env('GLOAM_RELAY_URL', 'https://www.gloam.trade/api/relay');
+const GLOAM_CHAINS = new Set(env('GLOAM_CHAINS', NETWORK === 'mainnet' ? '8453' : '84532').split(',').map(Number));
+async function gloamRelay(raw, ip, res) {
+  const reply = (code, body) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(typeof body === 'string' ? body : JSON.stringify(body)); };
+  let body;
+  try { body = JSON.parse(raw); } catch { return reply(400, { ok: false, error: 'bad json', code: 'bad_request' }); }
+  if (!['unshield', 'transfer'].includes(body?.action) || !GLOAM_CHAINS.has(body?.chainId)) return reply(400, { ok: false, error: 'only cash-outs and private sends on this network', code: 'unsupported' });
+  if (!perIp.take(`gloam:${ip}`)) return reply(429, { ok: false, error: 'slow down', code: 'rate_limited' });
+  try {
+    const r = await fetch(GLOAM_RELAY, { method: 'POST', headers: { 'content-type': 'application/json' }, body: raw });
+    reply(r.status, await r.text());
+  } catch (e) {
+    reply(502, { ok: false, error: `No answer from the Gloam relay: ${e.message}`, code: 'maybe_sent' });
+  }
+}
+
 createServer(async (req, res) => {
   const origin = req.headers.origin;
   if (origin && ORIGINS.includes(origin)) res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Headers', 'content-type');
   if (req.method === 'OPTIONS') return res.end();
   const send = (code, body) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
-  const h = handlers[new URL(req.url, 'http://x').pathname];
-  if (!h || req.method !== 'POST') return send(404, { error: 'not found' });
+  const path = new URL(req.url, 'http://x').pathname;
+  const h = handlers[path];
+  if ((!h && path !== '/gloam-relay') || req.method !== 'POST') return send(404, { error: 'not found' });
   let raw = '';
   for await (const c of req) { raw += c; if (raw.length > 16_000) return send(413, { error: 'too large' }); }
+  if (path === '/gloam-relay') return gloamRelay(raw, req.socket.remoteAddress, res);
   try {
     send(200, { result: await h(JSON.parse(raw || '{}'), req.socket.remoteAddress) });
   } catch (e) {

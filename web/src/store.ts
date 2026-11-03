@@ -3,7 +3,7 @@ import type { Chain, Config, Match, PublicFacts, PublicTurnRaw } from './chain/t
 import type { PlayerView } from './protocol/view';
 import { emptyOrders, type Orders } from './protocol/orders';
 
-export type Screen = 'landing' | 'tutorial' | 'lobby' | 'match' | 'reveal';
+export type Screen = 'landing' | 'tutorial' | 'lobby' | 'match' | 'reveal' | 'vault';
 export type Tool = 'move' | 'scout' | 'fort' | 'intel';
 export interface FeedItem { id: number; turn: number; text: string; tone: 'info' | 'battle' | 'good' | 'bad' }
 
