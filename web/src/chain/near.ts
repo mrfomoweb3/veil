@@ -6,6 +6,7 @@
 // the OutLayer run (start / resolve_turn / reveal) are cranked by the relayer itself.
 // The only transaction a player signs and pays for directly is a Stakes buy-in
 // (`usdc.ft_transfer_call`), which moves their own USDC.
+import '../shims/node';
 import { Account, Connection, InMemorySigner, KeyPair, keyStores, providers } from 'near-api-js';
 import { actionCreators, encodeSignedDelegate } from '@near-js/transactions';
 import type { Chain, VeilEvent } from './types';
@@ -31,6 +32,8 @@ export class NearChain implements Chain {
     private readonly provider: providers.JsonRpcProvider,
     private readonly keyPair: KeyPair,
   ) {}
+
+  private signing: Promise<unknown> = Promise.resolve();
 
   static async connect(network: 'testnet' | 'mainnet'): Promise<NearChain> {
     const storageKey = `veil:near:${network}:key`;
@@ -101,11 +104,20 @@ export class NearChain implements Chain {
     }
     const deposit = BigInt(opts.deposit ?? '0');
     if (deposit > 0n) throw new Error('payable calls go through the relayer');
-    const signed = await this.acct.signedDelegate({
-      receiverId: CONTRACT,
-      actions: [actionCreators.functionCall(method, args, BigInt(opts.gas ?? String(30n * TGAS)), 0n)],
-      blockHeightTtl: 120,
+    // near-api-js takes the nonce from a cached access key and never advances it after a
+    // delegate, so two calls in a row would share one. Sign one at a time and advance it here.
+    const next = this.signing.catch(() => {}).then(async () => {
+      const d = await this.acct.signedDelegate({
+        receiverId: CONTRACT,
+        actions: [actionCreators.functionCall(method, args, BigInt(opts.gas ?? String(30n * TGAS)), 0n)],
+        blockHeightTtl: 120,
+      });
+      const { accessKey } = await this.acct.findAccessKey(null as never, null as never);
+      accessKey.nonce = d.delegateAction.nonce;
+      return d;
     });
+    this.signing = next;
+    const signed = await next;
     return this.relayer<T>('/relay', { signed_delegate: b64(encodeSignedDelegate(signed)) });
   }
 

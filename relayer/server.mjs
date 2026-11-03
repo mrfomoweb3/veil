@@ -50,16 +50,31 @@ async function view(method, args = {}) {
   return JSON.parse(Buffer.from(r.result).toString());
 }
 
+const decode = (v) => { try { return JSON.parse(Buffer.from(v, 'base64').toString()); } catch { return null; } };
+
 function outcomeResult(o) {
   const st = o?.status;
   if (st?.Failure) throw new Error(JSON.stringify(st.Failure).slice(0, 300));
-  if (st?.SuccessValue) { try { return JSON.parse(Buffer.from(st.SuccessValue, 'base64').toString()); } catch { return null; } }
+  if (st?.SuccessValue) return decode(st.SuccessValue);
   return null;
+}
+
+// A meta-transaction's own status is the delegate wrapper's (empty) one: the contract's
+// answer, or its panic, is in the receipt the contract itself executed.
+function delegateResult(o) {
+  for (const r of o?.receipts_outcome ?? []) {
+    if (r.outcome.status?.Failure) throw new Error(JSON.stringify(r.outcome.status.Failure).slice(0, 300));
+  }
+  const mine = (o?.receipts_outcome ?? []).find((r) => r.outcome.executor_id === CONTRACT && 'SuccessValue' in (r.outcome.status ?? {}));
+  return mine?.outcome.status.SuccessValue ? decode(mine.outcome.status.SuccessValue) : null;
 }
 
 async function crank(method, args) {
   if (!CRANKABLE.has(method)) throw new Error('not crankable');
   const o = await relayer.functionCall({ contractId: CONTRACT, methodName: method, args, gas: 300n * TGAS, attachedDeposit: DEPOSIT });
+  for (const r of o?.receipts_outcome ?? []) {
+    if (r.outcome.executor_id === CONTRACT && r.outcome.status?.Failure) throw new Error(JSON.stringify(r.outcome.status.Failure).slice(0, 300));
+  }
   return outcomeResult(o);
 }
 
@@ -80,11 +95,12 @@ const handlers = {
     const why = checkDelegate(sd, CONTRACT);
     if (why) throw new Error(why);
     if (!perAccount.take(sd.delegateAction.senderId)) throw new Error('slow down');
+    console.log(new Date().toISOString(), '/relay', sd.delegateAction.senderId.slice(0, 10), sd.delegateAction.actions.map((a) => a.functionCall?.methodName ?? Object.keys(a)[0]).join(','));
     const o = await relayer.signAndSendTransaction({
       receiverId: sd.delegateAction.senderId,
       actions: [actionCreators.signedDelegate({ delegateAction: sd.delegateAction, signature: sd.signature })],
     });
-    return outcomeResult(o);
+    return delegateResult(o);
   },
   async '/crank'(body, ip) {
     if (!perIp.take(`crank:${ip}`)) throw new Error('slow down');
@@ -123,9 +139,14 @@ createServer(async (req, res) => {
   let raw = '';
   for await (const c of req) { raw += c; if (raw.length > 16_000) return send(413, { error: 'too large' }); }
   if (path === '/gloam-relay') return gloamRelay(raw, req.socket.remoteAddress, res);
+  const body = JSON.parse(raw || '{}');
+  const what = path === '/crank' ? `crank ${body.method}` : path;
   try {
-    send(200, { result: await h(JSON.parse(raw || '{}'), req.socket.remoteAddress) });
+    const result = await h(body, req.socket.remoteAddress);
+    console.log(new Date().toISOString(), what, 'ok', JSON.stringify(result)?.slice(0, 120));
+    send(200, { result });
   } catch (e) {
+    console.log(new Date().toISOString(), what, 'error', e.message.slice(0, 200));
     send(400, { error: e.message });
   }
 }).listen(Number(env('PORT', '8790')), () => console.log(`VEIL relayer for ${CONTRACT} on ${NETWORK}, as ${RELAYER}`));
