@@ -4,6 +4,7 @@ import { useMemo, useRef } from 'react';
 import { BackSide, InstancedMesh, Object3D, ShaderMaterial } from 'three';
 import { hash01 } from './palette';
 import type { TileVis } from './tiles';
+import { tileMenuHandlers } from './tileMenu';
 
 export function SkyDome() {
   const mat = useMemo(
@@ -73,7 +74,7 @@ const PUFFS = 7;
 const dummy = new Object3D();
 
 /** The fog of war: cloud puffs over every tile, burned off where you can see. */
-export function FogClouds({ tiles, onTile }: { tiles: TileVis[]; onTile?: (i: number) => void }) {
+export function FogClouds({ tiles, onTile, onTileMenu }: { tiles: TileVis[]; onTile?: (i: number) => void; onTileMenu?: (i: number) => void }) {
   const ref = useRef<InstancedMesh>(null!);
   const density = useRef<Float32Array>(new Float32Array(0));
   const n = tiles.length;
@@ -101,14 +102,17 @@ export function FogClouds({ tiles, onTile }: { tiles: TileVis[]; onTile?: (i: nu
     ref.current.instanceMatrix.needsUpdate = true;
   });
 
+  const menu = useMemo(() => tileMenuHandlers(onTileMenu, (id) => Math.floor(id / PUFFS)), [onTileMenu]);
   const click = (e: ThreeEvent<MouseEvent>) => {
     if (e.instanceId == null || !onTile) return;
     e.stopPropagation();
+    if (menu.swallowClick()) return;
     onTile(Math.floor(e.instanceId / PUFFS));
   };
+  const { swallowClick: _, ...menuProps } = menu;
 
   return (
-    <instancedMesh ref={ref} args={[undefined, undefined, n * PUFFS]} onClick={click}>
+    <instancedMesh ref={ref} args={[undefined, undefined, n * PUFFS]} onClick={click} {...menuProps}>
       <icosahedronGeometry args={[0.62, 2]} />
       <meshStandardMaterial color="#f4ede8" emissive="#c9a8b8" emissiveIntensity={0.12} roughness={1} />
     </instancedMesh>

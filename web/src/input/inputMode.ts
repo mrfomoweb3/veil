@@ -13,6 +13,8 @@ interface InputState {
   /** Hold progress of the end-turn button, 0..1. */
   endHold: number;
   paused: null | 'menu' | 'disconnected';
+  /** Tile the radial order menu is open on; it owns cursor, select and back while open. */
+  radial: number | null;
   rumble: boolean;
   set: (p: Partial<Omit<InputState, 'set'>>) => void;
 }
@@ -27,6 +29,7 @@ export const useInput = create<InputState>((set) => ({
   boardActive: false,
   endHold: 0,
   paused: null,
+  radial: null,
   rumble: rumblePref,
   set: (p) => {
     if (p.rumble != null) {

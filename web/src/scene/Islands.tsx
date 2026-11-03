@@ -8,6 +8,9 @@ import * as M from './models';
 import { hash01, seatColor } from './palette';
 import { buildLayers, type Item, type PropKey } from './props';
 import type { TileVis } from './tiles';
+import { tileMenuHandlers } from './tileMenu';
+
+const menuProps = ({ swallowClick: _, ...h }: ReturnType<typeof tileMenuHandlers>) => h;
 
 export function bob(i: number, t: number) {
   return Math.sin(t * 0.6 + hash01(i, 2) * 6.28) * 0.05;
@@ -113,9 +116,11 @@ interface Props {
   tiles: TileVis[];
   onTile?: (index: number) => void;
   onHover?: (index: number | null) => void;
+  /** Right-click or long-press: open the order menu on this tile. */
+  onTileMenu?: (index: number) => void;
 }
 
-export function Islands({ tiles, onTile, onHover }: Props) {
+export function Islands({ tiles, onTile, onHover, onTileMenu }: Props) {
   const n = tiles.length;
   const tops = useRef<InstancedMesh>(null!);
   const unders = useRef<InstancedMesh>(null!);
@@ -160,9 +165,11 @@ export function Islands({ tiles, onTile, onHover }: Props) {
     unders.current.instanceMatrix.needsUpdate = true;
   });
 
+  const menu = useMemo(() => tileMenuHandlers(onTileMenu, (id) => id), [onTileMenu]);
   const click = (e: ThreeEvent<MouseEvent>) => {
     if (e.instanceId == null || !onTile) return;
     e.stopPropagation();
+    if (menu.swallowClick()) return;
     onTile(e.instanceId);
   };
   const move = (e: ThreeEvent<PointerEvent>) => {
@@ -173,8 +180,8 @@ export function Islands({ tiles, onTile, onHover }: Props) {
 
   return (
     <group>
-      <instancedMesh ref={tops} args={[kitGeo.top, matte, n]} receiveShadow castShadow onClick={click} onPointerMove={move} onPointerOut={() => onHover?.(null)} frustumCulled={false} />
-      <instancedMesh ref={unders} args={[kitGeo.under, matte, n]} castShadow onClick={click} frustumCulled={false} />
+      <instancedMesh ref={tops} args={[kitGeo.top, matte, n]} receiveShadow castShadow onClick={click} onPointerMove={move} onPointerOut={() => onHover?.(null)} {...menuProps(menu)} frustumCulled={false} />
+      <instancedMesh ref={unders} args={[kitGeo.under, matte, n]} castShadow onClick={click} {...menuProps(menu)} frustumCulled={false} />
       {(Object.keys(layers) as PropKey[]).map((k) => (
         <Layer key={k} name={k} items={layers[k]} tiles={tiles} ys={ys} />
       ))}

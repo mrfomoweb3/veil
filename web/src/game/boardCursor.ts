@@ -45,7 +45,7 @@ export function useBoardCursor(opts: { tiles: TileVis[]; start: number | null; e
     () =>
       onAction((a) => {
         const o = ref.current;
-        if (!o.enabled || uiHasFocus() || useInput.getState().paused) return;
+        if (!o.enabled || uiHasFocus() || useInput.getState().paused || useInput.getState().radial != null) return;
         if (a.type === 'cursorMove') {
           const from = cur.current ?? o.start;
           if (from == null) return;

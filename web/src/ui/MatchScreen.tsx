@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../store';
 import { useMatchSync, seatName } from '../game/sync';
 import { addTrade, available, clickTile, fmtHex, moveTargets, removeMove, removeTrade, sendOrders, setMoveCount, setRecruit, spent, tradeCost } from '../game/actions';
@@ -20,6 +20,7 @@ import { onAction } from '../input/actions';
 import { useInput } from '../input/inputMode';
 import { focusInto, uiHasFocus } from '../input/focus';
 import { Glyph } from '../input/glyphs';
+import { closeRadial, openRadial, RadialMenu } from './RadialMenu';
 
 function useNow(ms = 250) {
   const [now, setNow] = useState(Date.now());
@@ -43,13 +44,18 @@ export function MatchScreen() {
   const padLike = mode === 'gamepad' || mode === 'keyboard';
   const [overlay, setOverlay] = useState<'none' | 'threat'>('none');
   const [cursor, setCursor] = useBoardCursor({ tiles, start: view ? view.capital : null, enabled: !!view, onSelect: clickTile });
+  const cursorRef = useRef(cursor);
+  cursorRef.current = cursor;
+  useEffect(() => () => useInput.getState().set({ radial: null }), []);
+  const tap = (i: number) => { if (useInput.getState().radial != null) closeRadial(); setCursor(i); clickTile(i); };
+  const menuAt = (i: number) => { setCursor(i); openRadial(i); };
 
   // Match-wide actions (the cursor and select are handled by useBoardCursor).
   useEffect(
     () =>
       onAction((a) => {
         const st = useStore.getState();
-        if (useInput.getState().paused) return;
+        if (useInput.getState().paused || useInput.getState().radial != null) return;
         if (a.type === 'cycleUnit' && st.view) {
           const mine = st.view.tiles.filter((t) => t.owner === st.view!.me && t.troops > 0).map((t) => t.index).sort((x, y) => x - y);
           if (!mine.length) return;
@@ -59,8 +65,11 @@ export function MatchScreen() {
           });
         } else if (a.type === 'back' && !uiHasFocus()) {
           st.set({ selected: null });
-        } else if (a.type === 'orderMenu') {
-          focusInto('.orders');
+        } else if (a.type === 'orderMenu' && !uiHasFocus()) {
+          // Only pads and keyboards send orderMenu, so the cursor is where the player is looking.
+          const at = cursorRef.current ?? st.selected;
+          if (at != null) openRadial(at);
+          else focusInto('.orders');
         } else if (a.type === 'cycleOverlay') {
           setOverlay((o) => (o === 'none' ? 'threat' : 'none'));
         } else if (a.type === 'endTurnHold') {
@@ -76,11 +85,12 @@ export function MatchScreen() {
   const seated = match?.seats.find((x) => x.account === chain.account);
 
   return (
-    <div className="screen match">
+    <div className={`screen match ${padLike ? 'padlike' : ''}`}>
       {view && board ? (
-        <World focus={capPos} distance={15} onMiss={() => s.set({ selected: null })}>
-          <Islands tiles={tiles} onTile={(i) => { setCursor(i); clickTile(i); }} onHover={setHover} />
-          <FogClouds tiles={tiles} onTile={(i) => { setCursor(i); clickTile(i); }} />
+        <World focus={capPos} distance={15} onMiss={() => { s.set({ selected: null }); closeRadial(); }}>
+          <Islands tiles={tiles} onTile={tap} onHover={setHover} onTileMenu={menuAt} />
+          <FogClouds tiles={tiles} onTile={tap} onTileMenu={menuAt} />
+          <RadialMenu tiles={tiles} />
           <PadCamera follow={cursor != null && tiles[cursor] ? tiles[cursor].pos : null} />
           {overlay === 'threat' && <ThreatMarks tiles={tiles} me={me} />}
           {padLike && cursor != null && tiles[cursor] && <Ring pos={tiles[cursor].pos} color="#ffe08a" pulse radius={1.02} />}
@@ -204,6 +214,7 @@ function OrdersPanel() {
           : `Moving from ${fmtHex(new Board(view.radius).hex(selected))} — ${available(selected)} available. ${padLike ? 'Select' : 'Click'} a highlighted island.`)}
         {tool === 'scout' && `${padLike ? 'Select' : 'Click'} up to 3 islands in a row, starting next to your land. The scout reveals 2 tiles around where it ends.`}
         {tool === 'fort' && `${padLike ? 'Select' : 'Click'} one of your islands: ×1.5 defence.`}
+        {' '}<span className="muted">{padLike ? <>Or press <Glyph h="orderMenu" /> on an island for the order menu.</> : 'Or right-click an island (long-press on touch) for the order menu.'}</span>
       </p>
       <label className="recruit">
         Recruit at capital
@@ -282,7 +293,7 @@ function ControlsBar({ overlay }: { overlay: 'none' | 'threat' }) {
       <span><Glyph h="move" /> cursor</span>
       <span><Glyph h="select" /> select</span>
       <span><Glyph h="back" /> cancel</span>
-      <span><Glyph h="orderMenu" /> orders panel</span>
+      <span><Glyph h="orderMenu" /> order menu</span>
       <span><Glyph h="cyclePrev" /><Glyph h="cycleNext" /> armies</span>
       <span><Glyph h="overlay" /> threat {overlay === 'threat' ? 'on' : 'off'}</span>
       <span><Glyph h="camera" /> camera</span>
