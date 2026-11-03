@@ -7,6 +7,9 @@
 // It also cranks turns on its own: every few seconds it resolves turns that are due and
 // reveals finished matches. It only ever talks to VEIL_CONTRACT.
 import { createServer } from 'node:http';
+import { readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { Account, Connection, InMemorySigner, KeyPair, keyStores, providers, utils } from 'near-api-js';
 import { createRequire } from 'node:module';
 // @near-js/transactions' ESM build uses extensionless imports Node can't resolve; use its CJS build.
@@ -25,7 +28,14 @@ const ORIGINS = env('ALLOWED_ORIGINS', 'http://localhost:5173').split(',');
 const TGAS = 10n ** 12n;
 
 const store = new keyStores.InMemoryKeyStore();
-await store.setKey(NETWORK, RELAYER, KeyPair.fromString(env('RELAYER_PRIVATE_KEY')));
+// The key comes from RELAYER_PRIVATE_KEY, or else from near-cli's credentials file, so it
+// never has to be copied into this repo.
+function relayerKey() {
+  if (process.env.RELAYER_PRIVATE_KEY) return process.env.RELAYER_PRIVATE_KEY;
+  const file = join(homedir(), '.near-credentials', NETWORK, `${RELAYER}.json`);
+  try { return JSON.parse(readFileSync(file, 'utf8')).private_key; } catch { throw new Error(`No RELAYER_PRIVATE_KEY and no key in ${file}`); }
+}
+await store.setKey(NETWORK, RELAYER, KeyPair.fromString(relayerKey()));
 const provider = new providers.JsonRpcProvider({ url: env('NEAR_RPC', `https://rpc.${NETWORK}.fastnear.com`) });
 const relayer = new Account(new Connection(NETWORK, provider, new InMemorySigner(store), ''), RELAYER);
 
