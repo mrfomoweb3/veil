@@ -274,3 +274,30 @@ fn a_failed_start_refunds_the_warlords() {
     assert_eq!((m.status, m.pot), (Status::Lobby, U128(1_000_000)));
     assert_eq!(c.get_warlords()[0].1.treasury, U128(1_000_000));
 }
+
+#[test]
+fn url_engines_run_directly_with_their_hash() {
+    let src = crate::engine_source("https://test.fastfs.io/a/b/abc.wasm", Some("abc".into()));
+    assert_eq!(src["WasmUrl"]["url"], "https://test.fastfs.io/a/b/abc.wasm");
+    assert_eq!(src["WasmUrl"]["hash"], "abc");
+    let p = crate::engine_source("me.testnet/veil-engine", Some("abc".into()));
+    assert_eq!(p["Project"]["project_id"], "me.testnet/veil-engine");
+}
+
+#[test]
+#[should_panic(expected = "hidden state")]
+fn engine_cannot_change_while_a_match_is_live() {
+    let mut c = contract();
+    ctx("alice.near", 0, 1_000);
+    let id = c.create_match(Mode::Practice, 3, 45_000, 2, Some(2));
+    c.join_practice(id, PK.into());
+    // A lobby holds no hidden state yet: the engine may still change.
+    ctx("owner.near", 0, 1_500);
+    c.set_engine("owner.near/veil-engine".into(), Some("cd".repeat(32)));
+    ctx("alice.near", 10u128.pow(23), 2_000);
+    let _ = c.start(id);
+    apply(&mut c, 2_000, id, "init", 0, Some(engine_out(0, &format!("init-{id}"), &["alice.near"], false, None)));
+    assert_eq!(c.get_match(id).unwrap().status, Status::Running);
+    ctx("owner.near", 0, 3_000);
+    c.set_engine("someone.near/other".into(), Some("ff".repeat(32)));
+}

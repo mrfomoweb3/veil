@@ -94,7 +94,8 @@ export function useMatchSync() {
       try { await refresh(); } catch (e) { console.warn(e); } finally { busy = false; }
     };
     tick();
-    const t = setInterval(tick, 1500);
+    // Events trigger a refresh at once; the poll is a fallback. Public RPCs rate-limit, so it's slower off devnet.
+    const t = setInterval(tick, chain.network === 'devnet' ? 1500 : 3000);
     const off = chain.onEvent((e) => {
       const d = e.data[0] as { match?: number };
       if (d?.match === matchId) tick();

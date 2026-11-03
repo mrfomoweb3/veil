@@ -3,6 +3,11 @@
 //!
 //! VEIL_CONTRACT set   → production build: only that contract may run this engine.
 //! VEIL_CONTRACT unset → development build: open doors, for scripts and testing.
+//!
+//! The engine runs through an OutLayer project: only project runs get persistent storage. So
+//! its keys are `bind: "project"` (OutLayer refuses `wasm` keys on a project run). They belong
+//! to the project and the calling contract, so every version the contract runs derives the same
+//! keys; the contract refuses to change the engine while any match holds hidden state.
 fn main() {
     println!("cargo:rerun-if-env-changed=VEIL_CONTRACT");
     let callers = match std::env::var("VEIL_CONTRACT").ok().filter(|c| !c.is_empty()) {
@@ -19,8 +24,8 @@ fn main() {
         r#"{{
   "storage_account": "predecessor",
   "encryption_keys": [
-    {{ "path": "state", "caller": "predecessor", "bind": "wasm" }},
-    {{ "path": "orders", "caller": "predecessor", "bind": "wasm" }}
+    {{ "path": "state", "caller": "predecessor", "bind": "project" }},
+    {{ "path": "orders", "caller": "predecessor", "bind": "project" }}
   ],
   "capabilities": {{ "network": ["cloud-api.near.ai"] }},
   "author_secrets": {{ "profile": "prod" }}{callers}

@@ -4,9 +4,9 @@
 
 | Key | Where | Purpose |
 |---|---|---|
-| `GAME_SK(match)` | Never stored. Derived in the enclave: `sha256("veil-game-sk-v1" ‖ mac("orders", "game-sk:v1:{match}"))`, where `mac` is OutLayer's HMAC under the encryption key `orders` (`caller: predecessor`, `bind: wasm`). | Players seal orders to `GAME_PK`. Published at The Reveal so anyone can open the on-chain order ciphertexts. |
+| `GAME_SK(match)` | Never stored. Derived in the enclave: `sha256("veil-game-sk-v1" ‖ mac("orders", "game-sk:v1:{match}"))`, where `mac` is OutLayer's HMAC under the encryption key `orders` (`caller: predecessor`, `bind: project`). | Players seal orders to `GAME_PK`. Published at The Reveal so anyone can open the on-chain order ciphertexts. |
 | `GAME_PK(match)` | Returned by `init`, stored in `Match.game_pk`. | Public. |
-| State key | OutLayer encryption key `state` (`caller: predecessor`, `bind: wasm`) + `storage_account: predecessor`. | Seals match state. Only runs made by `veil.near` with the exact engine build reach the cell and the key. |
+| State key | OutLayer encryption key `state` (`caller: predecessor`, `bind: project`) + `storage_account: predecessor`. | Seals match state. Only runs made by `veil.near` through the engine project reach the cell and the key; each match runs the version pinned at its creation, and the engine can't be changed while any match holds hidden state. (OutLayer gives storage only to project runs, and `wasm`-bound keys only to direct runs, so the key must be project-bound.) |
 | View key | X25519, generated in the browser (`web/src/session.ts`), public half registered at join (`view_pk`). | The enclave seals each view to it. |
 | VRF key | OutLayer's (`GET /vrf/pubkey`), stored in the contract. | Verifies each turn's randomness. |
 

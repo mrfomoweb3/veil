@@ -62,17 +62,39 @@ export class NearChain implements Chain {
   }
 
   /** Ask the relayer to create (fund) our implicit account if it doesn't exist yet. */
-  private async onboard(publicKey: string) {
+  private async exists() {
     try {
       await this.provider.query({ request_type: 'view_account', finality: 'final', account_id: this.account });
-      return;
-    } catch { /* not created yet */ }
-    const r = await fetch(`${RELAYER}/onboard`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ account_id: this.account, public_key: publicKey }),
-    });
-    if (!r.ok) throw new Error(`relayer could not create your account: ${await r.text()}`);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Creates the account through the relayer (idempotent, so retried on a flaky network) and
+   *  waits until it is final, so the first call doesn't meet "account does not exist". */
+  private async onboard(publicKey: string) {
+    if (await this.exists()) return;
+    let last = '';
+    for (let attempt = 0; attempt < 4; attempt++) {
+      if (attempt) await new Promise((r) => setTimeout(r, 1500 * 2 ** attempt));
+      try {
+        const r = await fetch(`${RELAYER}/onboard`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ account_id: this.account, public_key: publicKey }),
+        });
+        if (r.ok) break;
+        last = await r.text();
+      } catch (e) {
+        last = (e as Error).message;
+      }
+    }
+    for (let i = 0; i < 15; i++) {
+      if (await this.exists()) return;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    throw new Error(`The relayer could not create your account${last ? `: ${last}` : ''}. Check your connection and reload.`);
   }
 
   async view<T>(method: string, args: Record<string, unknown> = {}): Promise<T> {

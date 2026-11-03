@@ -36,8 +36,16 @@ function relayerKey() {
   try { return JSON.parse(readFileSync(file, 'utf8')).private_key; } catch { throw new Error(`No RELAYER_PRIVATE_KEY and no key in ${file}`); }
 }
 await store.setKey(NETWORK, RELAYER, KeyPair.fromString(relayerKey()));
-const provider = new providers.JsonRpcProvider({ url: env('NEAR_RPC', `https://rpc.${NETWORK}.fastnear.com`) });
-const relayer = new Account(new Connection(NETWORK, provider, new InMemorySigner(store), ''), RELAYER);
+// NEAR_RPC may list several endpoints (comma-separated). Reads fail over to the next when one
+// rate-limits or is down (free testnet RPCs throttle hard). Sends stay on the first: failing over
+// would re-send a transaction that may already have landed, and it would also swallow
+// near-api-js's own retry with a fresh nonce when the relayer's transactions race.
+const rpcUrls = env('NEAR_RPC', `https://rpc.${NETWORK}.fastnear.com`).split(',').map((u) => u.trim()).filter(Boolean);
+const provider = rpcUrls.length > 1
+  ? new providers.FailoverRpcProvider(rpcUrls.map((url) => new providers.JsonRpcProvider({ url })))
+  : new providers.JsonRpcProvider({ url: rpcUrls[0] });
+const sendProvider = new providers.JsonRpcProvider({ url: rpcUrls[0] });
+const relayer = new Account(new Connection(NETWORK, sendProvider, new InMemorySigner(store), ''), RELAYER);
 
 const perAccount = new RateLimit(30);
 const perIp = new RateLimit(5);
@@ -71,7 +79,14 @@ function delegateResult(o) {
 
 async function crank(method, args) {
   if (!CRANKABLE.has(method)) throw new Error('not crankable');
-  const o = await relayer.functionCall({ contractId: CONTRACT, methodName: method, args, gas: 300n * TGAS, attachedDeposit: DEPOSIT });
+  let o;
+  try {
+    o = await relayer.functionCall({ contractId: CONTRACT, methodName: method, args, gas: 300n * TGAS, attachedDeposit: DEPOSIT });
+  } catch (e) {
+    // An enclave run spans more blocks than the RPC waits for; the transaction carries on.
+    if (/"PENDING"|TIMEOUT_ERROR/.test(e.message ?? '')) return { pending: true };
+    throw e;
+  }
   for (const r of o?.receipts_outcome ?? []) {
     if (r.outcome.executor_id === CONTRACT && r.outcome.status?.Failure) throw new Error(JSON.stringify(r.outcome.status.Failure).slice(0, 300));
   }
@@ -146,7 +161,7 @@ createServer(async (req, res) => {
     console.log(new Date().toISOString(), what, 'ok', JSON.stringify(result)?.slice(0, 120));
     send(200, { result });
   } catch (e) {
-    console.log(new Date().toISOString(), what, 'error', e.message.slice(0, 200));
+    console.log(new Date().toISOString(), what, 'error', e.message.slice(0, 2000));
     send(400, { error: e.message });
   }
 }).listen(Number(env('PORT', '8790')), () => console.log(`VEIL relayer for ${CONTRACT} on ${NETWORK}, as ${RELAYER}`));
@@ -174,4 +189,4 @@ setInterval(async () => {
       .catch((e) => console.warn(`crank ${method} #${m.id}: ${e.message}`))
       .finally(() => setTimeout(() => inflight.delete(key), 15_000));
   }
-}, 3000);
+}, Number(env('CRANK_EVERY_MS', '5000')));

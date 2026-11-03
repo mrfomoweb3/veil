@@ -97,6 +97,18 @@ pub fn shares(paying: usize) -> Vec<u128> {
     }
 }
 
+/// The OutLayer code source for an engine. An `https://` engine is run directly by URL with
+/// its sha256 pinned: OutLayer serves keys bound to the build (`bind: "wasm"`, which keeps match
+/// state readable by this exact engine only) to direct runs, not to project runs.
+pub(crate) fn engine_source(engine: &str, version: Option<String>) -> Value {
+    if engine.starts_with("https://") {
+        let hash = version.expect("a URL engine needs its sha256 pinned");
+        json!({ "WasmUrl": { "url": engine, "hash": hash, "build_target": "wasm32-wasip2" } })
+    } else {
+        json!({ "Project": { "project_id": engine, "version_key": version } })
+    }
+}
+
 #[near]
 impl Veil {
     #[init]
@@ -134,8 +146,18 @@ impl Veil {
     }
 
     /// New matches use this engine; running matches keep the version they were created with.
+    /// `project` is an OutLayer project id, or the engine's https URL (then `version`, its
+    /// sha256, is required).
+    ///
+    /// Refused while any match holds hidden state. Match state is sealed with project-bound keys
+    /// for this contract (OutLayer gives storage only to project runs), so every version of the
+    /// engine run by this contract derives the same keys. Swapping the engine only when no match
+    /// is live means a new version can only ever see state that is public or not yet made.
     pub fn set_engine(&mut self, project: String, version: Option<String>) {
         self.assert_owner();
+        require!(!project.starts_with("https://") || version.is_some(), "a URL engine needs its sha256");
+        let live = self.matches.values().any(|m| matches!(m.status, Status::Starting | Status::Running | Status::Resolving | Status::Finished | Status::Revealing));
+        require!(!live, "a match holds hidden state: finish and reveal (or cancel) it before changing the engine");
         self.engine_project = project;
         self.engine_version = version;
     }
@@ -450,7 +472,7 @@ impl Veil {
         payer: AccountId,
     ) -> Promise {
         let args = json!({
-            "source": { "Project": { "project_id": project, "version_key": version } },
+            "source": engine_source(project, version),
             "resource_limits": { "max_instructions": 100_000_000_000u64, "max_memory_mb": 256, "max_execution_seconds": 60 },
             "input_data": input.to_string(),
             "response_format": "Json",

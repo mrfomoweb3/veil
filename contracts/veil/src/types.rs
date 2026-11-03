@@ -54,7 +54,8 @@ pub struct Match {
     pub deadline_ms: u64,
     pub game_pk: Option<String>,
     pub state_commit: Option<String>,
-    /// Engine project and exact version (wasm sha256), pinned when the match is created.
+    /// Engine (OutLayer project id, or https URL run directly) and exact version (wasm
+    /// sha256), pinned when the match is created.
     pub engine_project: String,
     pub engine_version: Option<String>,
     pub pot: U128,
