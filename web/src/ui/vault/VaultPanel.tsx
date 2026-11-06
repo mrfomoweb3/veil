@@ -5,7 +5,7 @@ import { erc20Abi, formatEther, parseUnits, type Address, type Hex } from 'viem'
 import { useStore } from '../../store';
 import { gloamNetwork, explorerTx, publicClient, usdc, GLOAM_ENV } from '../../privacy/gloamNetwork';
 import { addressProblem, cashOut, cashOutQuote, type CashOutStep } from '../../privacy/cashOut';
-import { reconcilePending, shieldUsdc, type ShieldStep } from '../../privacy/shield';
+import { reconcilePending, reconcileSpent, shieldUsdc, type ShieldStep } from '../../privacy/shield';
 import { injectedSigner } from '../../privacy/injectedSigner';
 import { chainSigSigner } from '../../privacy/chainSigSigner';
 import type { BaseSigner } from '../../privacy/baseSigner';
@@ -42,9 +42,14 @@ export function VaultPanel() {
 
   useEffect(() => {
     if (!vault) return;
-    reconcilePending(vault)
-      .then((r) => { if (r.confirmed) { setInfo(`${r.confirmed} deposit${r.confirmed > 1 ? 's' : ''} from an earlier session confirmed.`); vaultChanged(); } })
-      .catch(() => {});
+    (async () => {
+      const r = await reconcilePending(vault);
+      const spent = await reconcileSpent(vault);
+      const msgs: string[] = [];
+      if (r.confirmed) msgs.push(`${r.confirmed} deposit${r.confirmed > 1 ? 's' : ''} from an earlier session confirmed.`);
+      if (spent) msgs.push(`${spent} note${spent > 1 ? 's were' : ' was'} already cashed out (from an earlier session or another device).`);
+      if (msgs.length) { setInfo(msgs.join(' ')); vaultChanged(); }
+    })().catch(() => {});
   }, [vault]);
 
   const readBase = async (addr: Address) => {
@@ -76,12 +81,20 @@ export function VaultPanel() {
     const value = parseUnits(amount || '0', 6);
     if (value <= 0n) throw new Error('Enter an amount above zero.');
     const first = notes.length === 0;
-    const r = await shieldUsdc({ signer, vault, amount: value, onStep: setShieldStep });
-    setFogging(fmtUsdc(value - r.leftover));
-    setTimeout(() => setFogging(null), 2600);
-    if (r.leftover > 0n) setInfo(`${fmtUsdc(r.leftover)} did not fit under the vault's beta limit and stays in your Base address.`);
-    await readBase(baseAddr);
-    if (first) setGate(true);
+    try {
+      const r = await shieldUsdc({ signer, vault, amount: value, onStep: setShieldStep });
+      setFogging(fmtUsdc(value - r.leftover));
+      setTimeout(() => setFogging(null), 2600);
+      const msgs: string[] = [];
+      if (r.leftover > 0n) msgs.push(`${fmtUsdc(r.leftover)} did not fit under the vault's beta limit and stays in your Base address.`);
+      if (r.unindexed) msgs.push('Your deposit is in the pool; the network is still catching up, so wait a minute before cashing it out.');
+      if (msgs.length) setInfo(msgs.join(' '));
+      await readBase(baseAddr);
+    } finally {
+      // The backup is forced after the first deposit even if a later step failed: a note may
+      // already hold money, and this file is its only copy outside this browser.
+      if (first && (await vault.list()).length > 0) setGate(true);
+    }
   });
 
   const restore = (file: File) => act(async () => {
@@ -241,7 +254,7 @@ function CashOutSheet({ note, onClose, onDone }: { note: StoredNote; onClose: ()
         </label>
         {problem && <p className="bad small">{problem}</p>}
         {quote ? (
-          <p className="small">Vault fee {quote.feeBps / 100}% ({fmtUsdc(quote.fee)}). Arrives: <b>{fmtUsdc(quote.receives)}</b></p>
+          <p className="small">Vault fee {quote.feeBps / 100}% ({quote.fee > 0n && quote.fee < 10_000n ? 'under $0.01' : fmtUsdc(quote.fee)}). Arrives: <b>{fmtUsdc(quote.receives)}</b></p>
         ) : <p className="muted small">Reading the vault's fee…</p>}
         <p className="muted small">For better privacy, cash out to a fresh address, and not straight after you deposit. Gloam's relay sends it, so your own address never appears next to it.</p>
         {step && <p className="small">{CASH_LABELS[step]}…{tx && <> · <a href={explorerTx(tx)} target="_blank" rel="noreferrer">tx ↗</a></>}</p>}

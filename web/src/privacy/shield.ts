@@ -2,7 +2,7 @@
 // then broadcast. The note is saved BEFORE the deposit is sent: its secret is the only key
 // to the money, so a tab that closes after broadcast must still have it.
 import { erc20Abi, type Address, type Hex } from 'viem';
-import { approvalSteps, buildShieldBoundIntent } from '@gloamtrade/sdk';
+import { approvalSteps, buildShieldBoundIntent, openNotePoseidon } from '@gloamtrade/sdk';
 import { syncPool } from './treeCache';
 import { approveTx, execTx, waitForReceipt, type BaseSigner } from './baseSigner';
 import { depositPlan, gloamNetwork, publicClient, usdc } from './gloamNetwork';
@@ -16,7 +16,7 @@ export type ShieldStep =
   | { step: 'checking' }
   | { step: 'private'; notes: StoredNote[]; leftover: bigint };
 
-export async function shieldUsdc(opts: { signer: BaseSigner; vault: NoteVault; amount: bigint; onStep?: (s: ShieldStep) => void }): Promise<{ notes: StoredNote[]; leftover: bigint }> {
+export async function shieldUsdc(opts: { signer: BaseSigner; vault: NoteVault; amount: bigint; onStep?: (s: ShieldStep) => void }): Promise<{ notes: StoredNote[]; leftover: bigint; unindexed: number }> {
   const { signer, vault, amount } = opts;
   const on = opts.onStep ?? (() => {});
   const net = gloamNetwork();
@@ -69,12 +69,18 @@ export async function shieldUsdc(opts: { signer: BaseSigner; vault: NoteVault; a
     notes.push(await vault.markConfirmed(note.commitment, tx));
   }
 
+  // The deposit's receipt is final, but public RPCs serve the new tree leaf a few seconds late.
+  // Wait for it (it is what a cash-out proves against); after a minute, report it, don't fail:
+  // the money is in the pool and the note is saved either way.
   on({ step: 'checking' });
-  const synced = await syncPool();
-  const missing = notes.filter((n) => !synced.indexByCommitment.has(n.commitment.toLowerCase()));
-  if (missing.length) throw new Error(`Deposit confirmed but not yet in the pool tree (${missing.length} note${missing.length > 1 ? 's' : ''}). It will show once the RPC catches up.`);
+  let unindexed = notes.length;
+  for (let i = 0; i < 12 && unindexed; i++) {
+    if (i) await new Promise((r) => setTimeout(r, 5000));
+    const synced = await syncPool().catch(() => null);
+    if (synced) unindexed = notes.filter((n) => !synced.indexByCommitment.has(n.commitment.toLowerCase())).length;
+  }
   on({ step: 'private', notes, leftover });
-  return { notes, leftover };
+  return { notes, leftover, unindexed };
 }
 
 /**
@@ -93,4 +99,30 @@ export async function reconcilePending(vault: NoteVault): Promise<{ confirmed: n
     confirmed++;
   }
   return { confirmed, unsent: pending.length - confirmed };
+}
+
+const IS_SPENT_ABI = [{ type: 'function', name: 'isSpent', stateMutability: 'view', inputs: [{ type: 'bytes32' }], outputs: [{ type: 'bool' }] }] as const;
+
+/** Whether the pool has already spent this note (its nullifier is used). */
+export async function noteIsSpent(n: StoredNote): Promise<boolean> {
+  const { nullifier } = await openNotePoseidon(n.secret as Hex, BigInt(n.amountWei), n.asset);
+  const net = gloamNetwork();
+  return publicClient(net).readContract({ address: net.pool, abi: IS_SPENT_ABI, functionName: 'isSpent', args: [nullifier] });
+}
+
+/**
+ * Settle notes the pool has already spent but this browser still holds as confirmed: a tab
+ * that closed after Gloam's relay sent the cash-out, or a spend made from a restored backup
+ * on another device. Keeps the shown balance true.
+ */
+export async function reconcileSpent(vault: NoteVault): Promise<number> {
+  const live = (await vault.list()).filter((n) => n.status === 'confirmed');
+  let spent = 0;
+  for (const n of live) {
+    if (await noteIsSpent(n).catch(() => false)) {
+      await vault.markSpent(n.commitment, n.spentTx ?? '');
+      spent++;
+    }
+  }
+  return spent;
 }

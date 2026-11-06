@@ -9,6 +9,7 @@ import { gloamNetwork, publicClient } from './gloamNetwork';
 import type { NoteVault, StoredNote } from './noteVault';
 import { workerProver } from './prover';
 import { syncPool } from './treeCache';
+import { noteIsSpent } from './shield';
 
 /** Same-origin route to Gloam's relay (which sends no CORS headers): the Vite proxy in dev, VEIL's relayer when deployed. */
 const RELAY_URL = (import.meta.env?.VITE_GLOAM_RELAY_URL as string | undefined) ?? '/gloam-relay';
@@ -44,6 +45,10 @@ export async function cashOut(opts: {
   const net = gloamNetwork();
   const client = publicClient(net);
   on('syncing');
+  if (await noteIsSpent(note)) {
+    await vault.markSpent(note.commitment, note.spentTx ?? '');
+    throw new Error('This note was already cashed out (perhaps from a tab that closed, or another device). Nothing was sent.');
+  }
   const synced = await syncPool();
   const path = await synced.pathForCommitment(note.commitment as Hex);
   if (!path) throw new Error('This note is not in the pool tree. If you just deposited, wait a minute and try again.');

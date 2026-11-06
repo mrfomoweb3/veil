@@ -83,6 +83,15 @@ Safety rails: each note is saved (AES-GCM, key derived from a NEP-413 signature 
 
 On testnet, 1Click does not exist, so the Base Sepolia address is funded from faucets (the app says so and shows a live mainnet quote instead).
 
+**Run on Base Sepolia (2026-11-06), in the app, signed by a NEAR testnet account through Chain Signatures:**
+
+| Step | Sent by | Tx |
+|---|---|---|
+| Approve USDC | the player's derived Base address `0x0488…D140` | [`0x4b8649b0…b6de`](https://sepolia.basescan.org/tx/0x4b8649b047b35df3c130a9a6de38149c9fec42c1b4497950cc88c84ec729b6de) |
+| Shield 2 USDC into Gloam | the same address | [`0xf37c14a4…4482`](https://sepolia.basescan.org/tx/0xf37c14a4e8487e7763f1e4bbbfec3a865e18bbed478c87e0aa750114d10f4482) |
+| Cash out to a fresh address (1.995 USDC arrived) | **Gloam's relay** `0xb1e9…512e`, not the player | [`0xad620269…835f`](https://sepolia.basescan.org/tx/0xad6202695ccbe00e47695feaa362a6351ecc38529038a4c6d81eb037abe3835f) |
+| A second cash-out, same path | Gloam's relay | [`0xe5eee301…21c3`](https://sepolia.basescan.org/tx/0xe5eee3012a8501b9f3cf0e57d2c82d4922fb075b17b194d4900778825eac21c3) |
+
 ## Controls
 
 Mouse, touch, keyboard, or a gamepad (DualSense, DualShock 4, Xbox) for the whole game, menus and vault included. One radial order menu for every input: right-click, long-press, or Square/X on the cursor tile. Glyphs follow the pad you hold; `?lite` turns on performance mode.
@@ -119,7 +128,6 @@ scripts/             build / upload / deploy / simulate
 ## Limitations and next steps
 
 - 1Click buy-in from other chains is not built; Stakes takes USDC on NEAR directly. The cash-out leg (NEAR → Base) is built; it runs on mainnet only, and has been checked with live dry quotes, not with real money.
-- On Base Sepolia, Chain Signatures signing is verified (a fresh testnet account's MPC signature recovers to its derived address), but a broadcast deposit and cash-out need faucet ETH and test USDC in that address first.
 - The OutLayer secrets row holds only the model name, so warlords play with the heuristic bot until a NEAR AI key is added.
 - Social login (Privy) is not built; players get a browser-held implicit account created by the relayer.
 - A retried resolve gets a new VRF value (its alpha contains the request id). We never see a result before it lands, so this is not exploitable by us, but it is a property, not a guarantee.
