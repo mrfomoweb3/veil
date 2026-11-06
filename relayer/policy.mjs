@@ -3,10 +3,17 @@ export const RELAYABLE = new Set(['submit_orders', 'join_practice', 'create_matc
 export const CRANKABLE = new Set(['start', 'resolve_turn', 'reveal']);
 export const MAX_GAS_PER_ACTION = 50n * 10n ** 12n;
 
-/** Returns null when the signed delegate is acceptable, or the reason it is not. */
-export function checkDelegate(sd, contract) {
+export const MPC_GAS = 300n * 10n ** 12n;
+export const MPC_PATH = /^veil-[a-z0-9-]{1,32}$/;
+
+/** Returns null when the signed delegate is acceptable, or the reason it is not.
+ *  Besides calls to the game contract, it pays for one more thing: a Chain Signatures `sign`
+ *  on the MPC contract (secp256k1, a `veil-` path, the 1 yoctoNEAR the MPC contract requires),
+ *  so a player's NEAR account can sign its Base cash-out without holding NEAR for gas. */
+export function checkDelegate(sd, contract, mpc = null) {
   const da = sd?.delegateAction;
   if (!da) return 'not a signed delegate action';
+  if (mpc && da.receiverId === mpc) return checkMpcSign(da);
   if (da.receiverId !== contract) return `only calls to ${contract} are relayed`;
   if (!Array.isArray(da.actions) || da.actions.length !== 1) return 'exactly one action';
   const fc = da.actions[0]?.functionCall;
@@ -14,6 +21,19 @@ export function checkDelegate(sd, contract) {
   if (!RELAYABLE.has(fc.methodName)) return `method ${fc.methodName} is not relayed`;
   if (BigInt(fc.deposit) !== 0n) return 'relayed calls carry no deposit';
   if (BigInt(fc.gas) > MAX_GAS_PER_ACTION) return 'too much gas';
+  return null;
+}
+
+function checkMpcSign(da) {
+  if (!Array.isArray(da.actions) || da.actions.length !== 1) return 'exactly one action';
+  const fc = da.actions[0]?.functionCall;
+  if (!fc || fc.methodName !== 'sign') return 'only sign is relayed to the signer';
+  if (BigInt(fc.deposit) !== 1n) return 'sign carries exactly 1 yoctoNEAR';
+  if (BigInt(fc.gas) > MPC_GAS) return 'too much gas';
+  let req;
+  try { req = JSON.parse(new TextDecoder().decode(Uint8Array.from(fc.args))).request; } catch { return 'unreadable sign args'; }
+  if (req?.domain_id !== 0 || typeof req?.payload_v2?.Ecdsa !== 'string' || !/^[0-9a-f]{64}$/.test(req.payload_v2.Ecdsa)) return 'only secp256k1 hashes are signed';
+  if (!MPC_PATH.test(req.path ?? '')) return 'only veil- derivation paths';
   return null;
 }
 

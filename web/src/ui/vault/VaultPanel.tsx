@@ -1,12 +1,13 @@
 // Private vault: the player's Gloam balance on Base. Deposit (seal) from a Base wallet,
 // cash out to any address through Gloam's relay, back up and restore the encrypted notes.
 import { useEffect, useState } from 'react';
-import { erc20Abi, parseUnits, type Address, type Hex } from 'viem';
+import { erc20Abi, formatEther, parseUnits, type Address, type Hex } from 'viem';
 import { useStore } from '../../store';
 import { gloamNetwork, explorerTx, publicClient, usdc, GLOAM_ENV } from '../../privacy/gloamNetwork';
 import { addressProblem, cashOut, cashOutQuote, type CashOutStep } from '../../privacy/cashOut';
 import { reconcilePending, shieldUsdc, type ShieldStep } from '../../privacy/shield';
 import { injectedSigner } from '../../privacy/injectedSigner';
+import { chainSigSigner } from '../../privacy/chainSigSigner';
 import type { BaseSigner } from '../../privacy/baseSigner';
 import { fmtUsdc, unlockVault, useVault, vaultChanged } from '../../privacy/useVault';
 import type { Backup, StoredNote } from '../../privacy/noteVault';
@@ -22,6 +23,7 @@ export function VaultPanel() {
   const [signer, setSigner] = useState<BaseSigner | null>(null);
   const [baseAddr, setBaseAddr] = useState<Address | null>(null);
   const [baseUsdc, setBaseUsdc] = useState<bigint | null>(null);
+  const [baseEth, setBaseEth] = useState<bigint | null>(null);
   const [amount, setAmount] = useState('1');
   const [shieldStep, setShieldStep] = useState<ShieldStep | null>(null);
   const [fogging, setFogging] = useState<string | null>(null);
@@ -45,16 +47,28 @@ export function VaultPanel() {
   }, [vault]);
 
   const readBase = async (addr: Address) => {
-    setBaseUsdc(await publicClient().readContract({ address: usdc().address, abi: erc20Abi, functionName: 'balanceOf', args: [addr] }));
+    const [u, e] = await Promise.all([
+      publicClient().readContract({ address: usdc().address, abi: erc20Abi, functionName: 'balanceOf', args: [addr] }),
+      publicClient().getBalance({ address: addr }),
+    ]);
+    setBaseUsdc(u);
+    setBaseEth(e);
   };
 
-  const connectBase = () => act(async () => {
-    const s = await injectedSigner();
+  const useSigner = async (s: BaseSigner) => {
     const a = await s.address();
     setSigner(s);
     setBaseAddr(a);
     await readBase(a);
-  });
+  };
+
+  // Default: the Base address the player's NEAR account controls through Chain Signatures.
+  useEffect(() => {
+    if (!vault || signer || !chain.mpcSign || chain.network === 'devnet') return;
+    useSigner(chainSigSigner(chain)).catch((e) => setErr((e as Error).message));
+  }, [vault, chain]);
+
+  const connectBase = () => act(async () => useSigner(await injectedSigner()));
 
   const deposit = () => act(async () => {
     if (!vault || !signer || !baseAddr) return;
@@ -126,16 +140,26 @@ export function VaultPanel() {
         {vault && (
           <section className="panel">
             <h2>Seal USDC into the fog</h2>
-            <p className="muted small">Deposits come from a Base address you control. Coming next: your winnings arrive there straight from NEAR, signed by your NEAR account.</p>
+            {signer?.kind === 'chain-signatures' ? (
+              <p className="muted small">Deposits come from the Base address your NEAR account controls through NEAR Chain Signatures: no second wallet, and VEIL's relayer pays the NEAR side. Each signature takes the MPC network about 45 seconds.</p>
+            ) : (
+              <p className="muted small">Deposits come from a Base address you control.</p>
+            )}
             {!signer ? (
               <button className="primary" disabled={busy} onClick={connectBase}>Connect a Base wallet</button>
             ) : (
               <>
-                <p className="small">From <code>{baseAddr}</code><br />Holds {baseUsdc == null ? '…' : fmtUsdc(baseUsdc)} USDC</p>
+                <p className="small">
+                  From <code>{baseAddr}</code> {signer.kind === 'chain-signatures' && <span className="muted">(from your NEAR account)</span>}<br />
+                  Holds {baseUsdc == null ? '…' : fmtUsdc(baseUsdc)} USDC · {baseEth == null ? '…' : Number(formatEther(baseEth)).toFixed(5)} ETH for gas
+                  {baseAddr && <> · <button className="link inline" disabled={busy} onClick={() => act(() => readBase(baseAddr))}>refresh</button></>}
+                </p>
+                {baseEth === 0n && <p className="warn small">This address has no ETH for gas yet. {GLOAM_ENV === 'mainnet' ? 'Send it a little Base ETH.' : 'Send it Base Sepolia ETH from a faucet.'}</p>}
                 <label>Amount (USDC) <input className="num" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))} /></label>
                 <button className="primary" disabled={busy} onClick={deposit}>Seal into the fog</button>
                 <ShieldTracker step={shieldStep} />
-                {GLOAM_ENV !== 'mainnet' && <p className="muted small">Test USDC: faucet.circle.com (Base Sepolia). Gas: any Base Sepolia ETH faucet.</p>}
+                {GLOAM_ENV !== 'mainnet' && <p className="muted small">On testnet there is no NEAR → Base bridge, so fund this address by hand: test USDC from faucet.circle.com (Base Sepolia), gas from any Base Sepolia ETH faucet.</p>}
+                {signer.kind === 'chain-signatures' && <button className="link small" disabled={busy} onClick={connectBase}>Use a browser wallet instead</button>}
               </>
             )}
           </section>

@@ -126,12 +126,28 @@ export class NearChain implements Chain {
     }
     const deposit = BigInt(opts.deposit ?? '0');
     if (deposit > 0n) throw new Error('payable calls go through the relayer');
-    // near-api-js takes the nonce from a cached access key and never advances it after a
-    // delegate, so two calls in a row would share one. Sign one at a time and advance it here.
+    const signed = await this.delegate(CONTRACT, method, args, BigInt(opts.gas ?? String(30n * TGAS)), 0n);
+    return this.relayer<T>('/relay', { signed_delegate: b64(encodeSignedDelegate(signed)) });
+  }
+
+  /** A Chain Signatures `sign`, sent as a delegate action so the relayer pays the gas. The
+   *  predecessor is still this account, so the key is the one derived from it. */
+  async mpcSign(hash: `0x${string}`, path: string) {
+    const { MPC, signArgs } = await import('../privacy/chainSig');
+    const contract = (env.VITE_MPC_CONTRACT as string) || MPC[this.network].contract;
+    const signed = await this.delegate(contract, 'sign', signArgs(hash, path), 300n * TGAS, 1n);
+    const out = await this.relayer<import('../privacy/chainSig').MpcSignature | null>('/relay', { signed_delegate: b64(encodeSignedDelegate(signed)) });
+    if (!out) throw new Error('The signer network gave no signature; try again.');
+    return out;
+  }
+
+  // near-api-js takes the nonce from a cached access key and never advances it after a
+  // delegate, so two calls in a row would share one. Sign one at a time and advance it here.
+  private delegate(receiverId: string, method: string, args: object, gas: bigint, deposit: bigint) {
     const next = this.signing.catch(() => {}).then(async () => {
       const d = await this.acct.signedDelegate({
-        receiverId: CONTRACT,
-        actions: [actionCreators.functionCall(method, args, BigInt(opts.gas ?? String(30n * TGAS)), 0n)],
+        receiverId,
+        actions: [actionCreators.functionCall(method, args, gas, deposit)],
         blockHeightTtl: 120,
       });
       const { accessKey } = await this.acct.findAccessKey(null as never, null as never);
@@ -139,8 +155,7 @@ export class NearChain implements Chain {
       return d;
     });
     this.signing = next;
-    const signed = await next;
-    return this.relayer<T>('/relay', { signed_delegate: b64(encodeSignedDelegate(signed)) });
+    return next;
   }
 
   private async relayer<T>(path: string, body: unknown): Promise<T> {

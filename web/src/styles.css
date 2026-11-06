@@ -35,6 +35,7 @@ select { background: var(--panel-solid); color: var(--text); border: 1px solid v
 .err { color: var(--bad); margin-top: 8px; }
 .ok { color: var(--good); }
 .bad { color: var(--bad); }
+.warn { color: #ffc94d; }
 
 .primary {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));

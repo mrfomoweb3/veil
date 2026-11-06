@@ -5,7 +5,8 @@
 //   POST /crank   {method, args}            start / resolve_turn / reveal, with NEAR for OutLayer
 //
 // It also cranks turns on its own: every few seconds it resolves turns that are due and
-// reveals finished matches. It only ever talks to VEIL_CONTRACT.
+// reveals finished matches. It talks to VEIL_CONTRACT, and relays one kind of call to the
+// Chain Signatures contract (MPC_CONTRACT): a player's `sign` for their Base cash-out.
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -24,6 +25,7 @@ const CONTRACT = env('VEIL_CONTRACT');
 const RELAYER = env('RELAYER_ACCOUNT');
 const DEPOSIT = BigInt(utils.format.parseNearAmount(env('ENGINE_DEPOSIT_NEAR', '0.05')));
 const ONBOARD = BigInt(utils.format.parseNearAmount(env('ONBOARD_NEAR', '0.01')));
+const MPC = env('MPC_CONTRACT', NETWORK === 'mainnet' ? 'v1.signer' : 'v1.signer-prod.testnet');
 const ORIGINS = env('ALLOWED_ORIGINS', 'http://localhost:5173').split(',');
 const TGAS = 10n ** 12n;
 
@@ -48,6 +50,8 @@ const sendProvider = new providers.JsonRpcProvider({ url: rpcUrls[0] });
 const relayer = new Account(new Connection(NETWORK, sendProvider, new InMemorySigner(store), ''), RELAYER);
 
 const perAccount = new RateLimit(30);
+// A cash-out needs at most an approve, a shield and a retry or two; signs cost 300 Tgas each.
+const perSign = new RateLimit(4);
 const perIp = new RateLimit(5);
 
 async function view(method, args = {}) {
@@ -69,12 +73,13 @@ function outcomeResult(o) {
 
 // A meta-transaction's own status is the delegate wrapper's (empty) one: the contract's
 // answer, or its panic, is in the receipt the contract itself executed.
-function delegateResult(o) {
+function delegateResult(o, receiver) {
   for (const r of o?.receipts_outcome ?? []) {
     if (r.outcome.status?.Failure) throw new Error(JSON.stringify(r.outcome.status.Failure).slice(0, 300));
   }
-  const mine = (o?.receipts_outcome ?? []).find((r) => r.outcome.executor_id === CONTRACT && 'SuccessValue' in (r.outcome.status ?? {}));
-  return mine?.outcome.status.SuccessValue ? decode(mine.outcome.status.SuccessValue) : null;
+  // The last value the receiver returned: the MPC contract answers from its resumed receipt.
+  const mine = (o?.receipts_outcome ?? []).filter((r) => r.outcome.executor_id === receiver && r.outcome.status?.SuccessValue);
+  return mine.length ? decode(mine[mine.length - 1].outcome.status.SuccessValue) : null;
 }
 
 async function crank(method, args) {
@@ -107,15 +112,17 @@ const handlers = {
     const bytes = Buffer.from(body.signed_delegate ?? '', 'base64');
     let sd;
     try { sd = deserialize(SCHEMA.SignedDelegate, bytes); } catch { throw new Error('undecodable signed delegate'); }
-    const why = checkDelegate(sd, CONTRACT);
+    const why = checkDelegate(sd, CONTRACT, MPC);
     if (why) throw new Error(why);
+    const isSign = sd.delegateAction.receiverId === MPC;
     if (!perAccount.take(sd.delegateAction.senderId)) throw new Error('slow down');
+    if (isSign && !perSign.take(sd.delegateAction.senderId)) throw new Error('too many signatures, wait a minute');
     console.log(new Date().toISOString(), '/relay', sd.delegateAction.senderId.slice(0, 10), sd.delegateAction.actions.map((a) => a.functionCall?.methodName ?? Object.keys(a)[0]).join(','));
     const o = await relayer.signAndSendTransaction({
       receiverId: sd.delegateAction.senderId,
       actions: [actionCreators.signedDelegate({ delegateAction: sd.delegateAction, signature: sd.signature })],
     });
-    return delegateResult(o);
+    return delegateResult(o, sd.delegateAction.receiverId);
   },
   async '/crank'(body, ip) {
     if (!perIp.take(`crank:${ip}`)) throw new Error('slow down');
