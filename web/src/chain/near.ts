@@ -130,6 +130,32 @@ export class NearChain implements Chain {
     return this.relayer<T>('/relay', { signed_delegate: b64(encodeSignedDelegate(signed)) });
   }
 
+  async ftBalance(token: string) {
+    const res = (await this.provider.query({
+      request_type: 'call_function', finality: 'final', account_id: token, method_name: 'ft_balance_of',
+      args_base64: b64(new TextEncoder().encode(JSON.stringify({ account_id: this.account }))),
+    })) as unknown as { result: number[] };
+    return BigInt(JSON.parse(new TextDecoder().decode(Uint8Array.from(res.result))));
+  }
+
+  async ftTransfer(token: string, to: string, amount: bigint) {
+    const run = this.signing.catch(() => {}).then(() =>
+      this.acct.signAndSendTransaction({
+        receiverId: token,
+        actions: [
+          // NEP-145: a no-op refund if `to` is already registered.
+          actionCreators.functionCall('storage_deposit', { account_id: to, registration_only: true }, 30n * TGAS, 1_250_000_000_000_000_000_000n),
+          actionCreators.functionCall('ft_transfer', { receiver_id: to, amount: amount.toString(), memo: 'veil cash-out' }, 30n * TGAS, 1n),
+        ],
+      }),
+    );
+    this.signing = run;
+    const o = await run;
+    const failed = o.receipts_outcome.find((r) => typeof r.outcome.status === 'object' && 'Failure' in r.outcome.status);
+    if (failed) throw new Error(`The USDC transfer failed: ${JSON.stringify((failed.outcome.status as { Failure: unknown }).Failure).slice(0, 200)}`);
+    return o.transaction.hash as string;
+  }
+
   /** A Chain Signatures `sign`, sent as a delegate action so the relayer pays the gas. The
    *  predecessor is still this account, so the key is the one derived from it. */
   async mpcSign(hash: `0x${string}`, path: string) {

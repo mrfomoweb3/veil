@@ -11,5 +11,8 @@ export default defineConfig({
   },
   resolve: { alias: { assert: fileURLToPath(new URL('./src/shims/assert.ts', import.meta.url)) } },
   worker: { format: 'es' },
+  // The vault is lazy-loaded; listing its deps up front stops Vite re-optimizing mid-session
+  // (which leaves the page importing stale chunks) the first time someone opens it in dev.
+  optimizeDeps: { include: ['@noble/curves/secp256k1', '@noble/hashes/sha3', '@noble/hashes/utils', 'viem', '@gloamtrade/sdk'] },
   build: { target: 'es2022', chunkSizeWarningLimit: 1500 },
 });

@@ -349,6 +349,9 @@ function EndPanel() {
       {match.payouts.length > 0 && (
         <p>Payouts: {match.payouts.map(([a, v]) => `${a === chain.account ? 'you' : a} $${(Number(v) / 1e6).toFixed(2)}`).join(', ')}. Winnings are claimable from the lobby.</p>
       )}
+      {chain.network !== 'devnet' && match.payouts.some(([a, v]) => a === chain.account && v !== '0') && (
+        <button className="ghost" onClick={() => set({ screen: 'vault' })}>Cash out privately ›</button>
+      )}
       {match.status === 'Revealed' ? (
         <button className="primary" onClick={() => set({ screen: 'reveal' })}>Open The Reveal</button>
       ) : (

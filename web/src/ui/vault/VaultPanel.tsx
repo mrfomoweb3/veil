@@ -13,6 +13,7 @@ import { fmtUsdc, unlockVault, useVault, vaultChanged } from '../../privacy/useV
 import type { Backup, StoredNote } from '../../privacy/noteVault';
 import { BackupGate, downloadBackup } from './BackupGate';
 import { PrivacyModel } from './PrivacyModel';
+import { FromNear } from './FromNear';
 
 export function VaultPanel() {
   const chain = useStore((s) => s.chain)!;
@@ -114,7 +115,7 @@ export function VaultPanel() {
                 {fogging ? <span className="ghost-amt">{fogging}</span> : null}
                 <b>{fmtUsdc(balance)}</b> <span className="muted">USDC</span>
               </div>
-              <p className="muted small">Held in Gloam on {net.label}. Where it goes next is yours alone. <button className="link inline" onClick={() => setExplain(true)}>What stays private?</button></p>
+              <p className="muted small">Held in Gloam on {GLOAM_ENV === 'mainnet' ? net.label : `${net.label} Sepolia (test funds)`}. Where it goes next is yours alone. <button className="link inline" onClick={() => setExplain(true)}>What stays private?</button></p>
               <div className="notes">
                 {notes.length === 0 && <p className="muted small">No notes yet.</p>}
                 {notes.map((n) => (
@@ -163,6 +164,10 @@ export function VaultPanel() {
               </>
             )}
           </section>
+        )}
+
+        {vault && signer?.kind === 'chain-signatures' && baseAddr && (
+          <FromNear recipient={baseAddr} baseEthWei={baseEth ?? 0n} onArrived={(v) => { if (v > 0n) setAmount((Number(v) / 1e6).toFixed(2)); readBase(baseAddr).catch(() => {}); }} />
         )}
       </main>
 

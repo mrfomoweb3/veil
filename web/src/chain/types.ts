@@ -31,5 +31,10 @@ export interface Chain {
   /** NEP-413 signature over the fixed vault message; the private-vault key is derived from it. */
   signVaultMessage?(): Promise<Uint8Array>;
   /** NEAR Chain Signatures: the MPC network signs a 32-byte hash for this account's derived key. */
+  /** Sends a NEP-141 token from this account (registering the receiver's storage), signed and
+   *  paid by the player like a Stakes buy-in. Returns the NEAR tx hash. Used by the bridge. */
+  /** NEP-141 balance of this account. */
+  ftBalance?(token: string): Promise<bigint>;
+  ftTransfer?(token: string, to: string, amount: bigint): Promise<string>;
   mpcSign?(hash: `0x${string}`, path: string): Promise<import('../privacy/chainSig').MpcSignature>;
 }
