@@ -4,6 +4,7 @@ import { Board, hexDistance, sameHex, type Hex } from '../protocol/hex';
 import { encodeOrders, FORT_COST, MAX_MOVES, MAX_RECRUIT, MAX_TRADES, SCOUT_COST, SCOUT_STEPS, type Trade } from '../protocol/orders';
 import { fromHex, INFO_ORDERS, ordersAad, seal, toB64 } from '../protocol/crypto';
 import { Terrain } from '../protocol/view';
+import { play } from '../audio/sound';
 
 export function boardOf() {
   const v = useStore.getState().view;
@@ -71,7 +72,7 @@ export function clickTile(i: number) {
   const st = useStore.getState();
   const { view, draft, selected, tool, match } = st;
   const board = boardOf();
-  if (!view || !board || !view.alive || match?.status !== 'Running') return;
+  if (!view || !board || !view.alive || (match?.status !== 'Running' && match?.status !== 'Resolving')) return;
   const mine = tileAt(i)?.owner === view.me;
   const h = board.hex(i);
 
@@ -165,9 +166,32 @@ export async function sendOrders() {
   if (!chain || !match || !view || !match.game_pk) return;
   const pt = encodeOrders(draft);
   const ct = seal(fromHex(match.game_pk), pt, ordersAad(match.id, match.turn, chain.account), INFO_ORDERS);
-  await chain.call('submit_orders', { match_id: match.id, turn: match.turn, ct_b64: toB64(ct) });
-  st.set({ submittedTurn: match.turn });
-  st.push(`Orders sealed for turn ${match.turn}. Only the enclave can read them.`, 'good');
+  // A busy public RPC can refuse the relay for a moment (429) or time out. Sending again is safe:
+  // a second submit for the same turn only replaces the first.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await chain.call('submit_orders', { match_id: match.id, turn: match.turn, ct_b64: toB64(ct) });
+      break;
+    } catch (e) {
+      const msg = (e as Error).message ?? '';
+      if (attempt >= 3 || !/429|Rate limit|timeout|timed out|Failed to fetch/i.test(msg)) { play('error'); throw e; }
+      await new Promise((r) => setTimeout(r, 1500 * attempt));
+    }
+  }
+  st.set({ submittedTurn: match.turn, sealedOrders: draft, sealedBy: [...new Set([...st.sealedBy, chain.account])] });
+  play('seal');
+  st.push(`Orders sealed for turn ${match.turn}. Nobody can read them, not even us.`, 'good');
+  // Last one in: start the turn now rather than when the relayer next looks (up to 5 s later).
+  // The relayer runs one resolve per match at a time, so a crank it already started is joined.
+  if (chain.network !== 'devnet') {
+    const waiting = match.seats.filter((s) => s.alive && !s.ai && !s.autopilot).map((s) => s.account);
+    chain.view<string[]>('get_submitted', { match_id: match.id })
+      .then((sub) => {
+        const inn = new Set([...sub, chain.account]);
+        if (waiting.every((a) => inn.has(a))) return chain.call('resolve_turn', { match_id: match.id });
+      })
+      .catch(() => {});
+  }
 }
 
 export const fmtHex = (h: Hex) => `(${h[0]}, ${h[1]})`;

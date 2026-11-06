@@ -1,5 +1,6 @@
 import { useStore } from '../store';
 import { viewKey } from '../session';
+import { play } from '../audio/sound';
 import type { Mode } from '../chain/types';
 
 export async function openMatch(id: number) {
@@ -36,6 +37,7 @@ export async function joinMatch(id: number, mode: Mode) {
   } else {
     await chain.call('ft_transfer_call', { amount: mode.Stakes.buy_in, msg: JSON.stringify({ join: id, view_pk: pkHex }) });
   }
+  play('join');
   await openMatch(id);
 }
 

@@ -38,15 +38,37 @@ function relayerKey() {
   try { return JSON.parse(readFileSync(file, 'utf8')).private_key; } catch { throw new Error(`No RELAYER_PRIVATE_KEY and no key in ${file}`); }
 }
 await store.setKey(NETWORK, RELAYER, KeyPair.fromString(relayerKey()));
-// NEAR_RPC may list several endpoints (comma-separated). Reads fail over to the next when one
-// rate-limits or is down (free testnet RPCs throttle hard). Sends stay on the first: failing over
-// would re-send a transaction that may already have landed, and it would also swallow
-// near-api-js's own retry with a fresh nonce when the relayer's transactions race.
+// NEAR_RPC may list several endpoints (comma-separated); free testnet RPCs rate-limit hard.
+// Requests stay on one endpoint and move to the next only when it answers 429 (rate limited):
+// a 429 means the request was refused, not run, so even a transaction is safe to send again
+// elsewhere. Any other error is passed on unchanged (moving a send after a timeout could
+// double it, and near-api-js's own nonce retry must see InvalidNonce).
+const RATE_LIMITED = /-429|\b429\b|Rate limits exceeded|Too Many Requests/i;
+class RotatingProvider extends providers.JsonRpcProvider {
+  constructor(urls) {
+    super({ url: urls[0] });
+    this.all = urls.map((url) => new providers.JsonRpcProvider({ url }));
+    this.at = 0;
+  }
+  async sendJsonRpc(method, params) {
+    let last;
+    for (let k = 0; k < this.all.length; k++) {
+      const i = (this.at + k) % this.all.length;
+      try {
+        const r = await this.all[i].sendJsonRpc(method, params);
+        if (i !== this.at) { console.log(`RPC: rate-limited, now on ${this.all[i].connection.url}`); this.at = i; }
+        return r;
+      } catch (e) {
+        if (!RATE_LIMITED.test(e?.message ?? '')) throw e;
+        last = e;
+      }
+    }
+    throw last;
+  }
+}
 const rpcUrls = env('NEAR_RPC', `https://rpc.${NETWORK}.fastnear.com`).split(',').map((u) => u.trim()).filter(Boolean);
-const provider = rpcUrls.length > 1
-  ? new providers.FailoverRpcProvider(rpcUrls.map((url) => new providers.JsonRpcProvider({ url })))
-  : new providers.JsonRpcProvider({ url: rpcUrls[0] });
-const sendProvider = new providers.JsonRpcProvider({ url: rpcUrls[0] });
+const provider = new RotatingProvider(rpcUrls);
+const sendProvider = provider;
 const relayer = new Account(new Connection(NETWORK, sendProvider, new InMemorySigner(store), ''), RELAYER);
 
 const perAccount = new RateLimit(30);
@@ -103,7 +125,7 @@ async function crankOnce(method, args) {
     o = await relayer.functionCall({ contractId: CONTRACT, methodName: method, args, gas: 300n * TGAS, attachedDeposit: DEPOSIT });
   } catch (e) {
     // An enclave run spans more blocks than the RPC waits for; the transaction carries on.
-    if (/"PENDING"|TIMEOUT_ERROR/.test(e.message ?? '')) return { pending: true };
+    if (/"PENDING"|TIMEOUT_ERROR|Request timeout|timed out/i.test(e.message ?? '')) return { pending: true };
     throw e;
   }
   for (const r of o?.receipts_outcome ?? []) {
@@ -189,6 +211,10 @@ createServer(async (req, res) => {
 
 // The cranker: resolve due turns, reveal finished matches.
 const inflight = new Set();
+// A crank that fails (rate limit, a lobby someone left) waits before the next try: 15 s, then
+// doubling up to 5 min. Retrying every tick would only feed the RPC's rate limiter.
+const backoff = new Map();
+const LOBBY_FRESH_MS = 30 * 60 * 1000; // the contract's STALE_LOBBY_MS: older lobbies are left for cancel_stale
 setInterval(async () => {
   let matches;
   try { matches = await view('get_matches', { from_id: 1, limit: 100 }); } catch { return; }
@@ -198,16 +224,26 @@ setInterval(async () => {
     if (inflight.has(key)) continue;
     let method = null;
     if (m.status === 'Finished') method = 'reveal';
+    // A lobby that filled up (friends joining by invite link) starts on its own; the contract
+    // lets anyone start a full lobby.
+    if (m.status === 'Lobby' && now - m.created_ms < LOBBY_FRESH_MS && m.seats.length >= 1 && m.seats.length + m.ai_seats >= m.max_seats) method = 'start';
     if (m.status === 'Running') {
       const humans = m.seats.filter((s) => s.alive && !s.ai && !s.autopilot).map((s) => s.account);
       const submitted = now >= m.deadline_ms ? [] : await view('get_submitted', { match_id: m.id }).catch(() => []);
       if (now >= m.deadline_ms || humans.every((a) => submitted.includes(a))) method = 'resolve_turn';
     }
     if (!method) continue;
+    const bkey = `${method}:${m.id}`;
+    const b = backoff.get(bkey);
+    if (b && now < b.until) continue;
     inflight.add(key);
     crank(method, { match_id: m.id })
-      .then(() => console.log(`cranked ${method} #${m.id} t${m.turn}`))
-      .catch((e) => console.warn(`crank ${method} #${m.id}: ${e.message}`))
+      .then(() => { backoff.delete(bkey); console.log(`cranked ${method} #${m.id} t${m.turn}`); })
+      .catch((e) => {
+        const n = (backoff.get(bkey)?.n ?? 0) + 1;
+        backoff.set(bkey, { n, until: Date.now() + Math.min(300_000, 15_000 * 2 ** (n - 1)) });
+        console.warn(`crank ${method} #${m.id} (retry in ${Math.min(300, 15 * 2 ** (n - 1))}s): ${e.message.slice(0, 160)}`);
+      })
       .finally(() => setTimeout(() => inflight.delete(key), 15_000));
   }
 }, Number(env('CRANK_EVERY_MS', '5000')));

@@ -1,6 +1,7 @@
 // The Reveal: the whole match with the fog removed, re-run and verified in your browser.
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../store';
+import { play } from '../audio/sound';
 import { replay, type ReplayResult } from '../game/replay';
 import { sha256Hex } from '../protocol/crypto';
 import { Board } from '../protocol/hex';
@@ -45,6 +46,7 @@ export function Reveal() {
         const r = await replay(doc, config?.vrf_pubkey ?? '');
         setRes(r);
         setT(r.frames.length - 1);
+        play(r.ok && hashOk ? 'reveal' : 'error');
       })
       .catch((e) => setErr(e.message));
   }, [config]);

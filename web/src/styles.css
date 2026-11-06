@@ -193,6 +193,8 @@ label.row { display: flex; gap: 8px; align-items: center; }
 }
 .intro-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 16px; text-align: center; }
 .intro-tag { color: #cbbfb0; font-size: 14px; letter-spacing: 0.04em; margin: 0; text-shadow: 0 2px 10px #000; }
+.intro-who { color: #a99c8c; font-size: 13px; margin: 0; text-shadow: 0 2px 10px #000; }
+.intro-who b { color: #ffd98a; font-weight: 600; }
 .intro-links { display: flex; gap: 10px; align-items: center; color: #8f8494; font-size: 13px; }
 .intro-links .link { display: inline; color: #e8c37a; }
 
@@ -380,3 +382,44 @@ label.col { display: block; margin: 8px 0; }
 
 /* The controls bar sits bottom-right on pads and keyboards; keep the tile info clear of it. */
 .match.padlike .tileinfo { bottom: 96px; }
+
+/* Invites */
+.invite-screen { display: grid; place-items: center; background: radial-gradient(ellipse at 50% 30%, #2a2350 0%, #0f0c1d 70%); }
+.invite-seats { list-style: none; padding: 0; margin: 10px 0 14px; display: grid; gap: 6px; }
+.invite-seats li { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.04); }
+.invite-seats li.empty { border: 1px dashed rgba(255, 255, 255, 0.18); background: none; color: var(--muted); }
+.invite-seats .dot { width: 10px; height: 10px; border-radius: 50%; background: #666; display: inline-block; }
+.invite-box { margin: 4px 0 14px; }
+.invite-box .row { display: flex; gap: 6px; }
+.invite-url { flex: 1; min-width: 0; font: 12px ui-monospace, monospace; padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.15); background: rgba(0, 0, 0, 0.3); color: inherit; }
+.lobby-panel .primary, .invite .primary { width: 100%; margin-top: 4px; }
+.invite .cta { display: flex; gap: 12px; align-items: center; margin-top: 14px; }
+
+/* Who has sealed, mute */
+.seat .seal-mark { font-size: 10px; opacity: 0.55; margin-left: 2px; }
+.seat.sealed { border-color: color-mix(in srgb, var(--c) 70%, transparent); }
+.seat.sealed .seal-mark { opacity: 1; }
+.topbar .mute { padding: 4px 8px; font-size: 14px; }
+
+/* While the enclave resolves */
+.resolving-card { position: absolute; left: 50%; top: 86px; transform: translateX(-50%); z-index: 5; width: min(440px, calc(100vw - 32px)); padding: 12px 14px; animation: slide 0.35s ease-out; }
+.resolving-card .rc-row { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; }
+.resolving-card .rc-row.live { color: #ffe08a; }
+.resolving-card .rc-ok { color: var(--good); width: 14px; text-align: center; }
+.resolving-card .rc-dot { width: 14px; height: 6px; display: inline-block; background: radial-gradient(circle, var(--muted) 2px, transparent 3px) center / 6px 6px no-repeat; }
+.resolving-card .rc-spin { width: 12px; height: 12px; margin: 0 1px; border-radius: 50%; border: 2px solid rgba(255, 224, 138, 0.25); border-top-color: #ffe08a; animation: spin 0.9s linear infinite; }
+.resolving-card p { margin: 6px 0 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.orders.planning { border-color: rgba(255, 224, 138, 0.35); }
+.orders .plan-note { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; background: rgba(255, 224, 138, 0.08); font-size: 12px; line-height: 1.4; }
+
+/* Turn recap */
+.recap { position: absolute; left: 50%; top: 86px; transform: translateX(-50%); z-index: 6; width: min(380px, calc(100vw - 32px)); padding: 12px 16px; cursor: pointer; animation: recap-in 0.45s cubic-bezier(.2, .9, .3, 1.2); }
+.recap h3 { margin: 0 0 6px; font-family: 'Cinzel', Georgia, serif; color: #ffd98a; font-size: 15px; }
+.recap.good { border-color: rgba(105, 219, 124, 0.45); }
+.recap.bad { border-color: rgba(255, 107, 107, 0.45); }
+.recap-lines { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; }
+.recap .fallen { margin: 8px 0 0; color: #ffb36b; font-weight: 600; }
+.recap p { margin: 8px 0 0; }
+@keyframes recap-in { from { opacity: 0; transform: translate(-50%, -10px) scale(0.96); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+@media (max-width: 720px) { .resolving-card, .recap { top: 96px; } }

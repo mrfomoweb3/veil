@@ -21,6 +21,8 @@ import { useInput } from '../input/inputMode';
 import { focusInto, uiHasFocus } from '../input/focus';
 import { Glyph } from '../input/glyphs';
 import { closeRadial, openRadial, RadialMenu } from './RadialMenu';
+import { inviteUrl } from '../game/route';
+import { isMuted, onMute, setMuted } from '../audio/sound';
 
 function useNow(ms = 250) {
   const [now, setNow] = useState(Date.now());
@@ -95,7 +97,8 @@ export function MatchScreen() {
           {overlay === 'threat' && <ThreatMarks tiles={tiles} me={me} />}
           {padLike && cursor != null && tiles[cursor] && <Ring pos={tiles[cursor].pos} color="#ffe08a" pulse radius={1.02} />}
           <TroopChips tiles={tiles} me={me} />
-          <OrderArcs tiles={tiles} board={board} orders={draft} color={seatColor(me)} solid={s.submittedTurn === match?.turn} />
+          {s.planning && s.sealedOrders && <OrderArcs tiles={tiles} board={board} orders={s.sealedOrders} color={seatColor(me)} solid />}
+          <OrderArcs tiles={tiles} board={board} orders={draft} color={seatColor(me)} solid={!s.planning && s.submittedTurn === match?.turn} />
           <BattleMarks tiles={tiles} board={board} battles={lastBattles} />
           <RumoredCapitals tiles={tiles} board={board} capitals={capitals} alive={view.seats.map((x) => x.alive)} me={view.me} />
           {selected != null && <Ring pos={tiles[selected].pos} color="#ffffff" pulse />}
@@ -105,7 +108,7 @@ export function MatchScreen() {
       ) : (
         <div className="veil-wait">
           <div className="spinner" />
-          <p>{match?.status === 'Lobby' ? 'Waiting in the lobby…' : 'The enclave is raising the islands. Nobody — not even us — will see the map.'}</p>
+          <p>{match?.status === 'Lobby' ? 'Waiting in the lobby…' : seated || !match ? 'Raising the islands… The map is made inside a sealed machine: nobody sees it, not even us.' : 'This match is underway and you have no seat in it.'}</p>
         </div>
       )}
 
@@ -115,9 +118,11 @@ export function MatchScreen() {
       {view && <TileInfo index={(padLike ? cursor : hover) ?? selected} tiles={tiles} board={board} />}
       {view && <ControlsBar overlay={overlay} />}
       <Feed />
+      {match?.status === 'Resolving' && seated && <ResolvingCard />}
+      <RecapCard />
       {match && ['Finished', 'Revealing', 'Revealed'].includes(match.status) && <EndPanel />}
       {view && !view.alive && match?.status === 'Running' && <div className="banner bad">Your capital has fallen. Watch the war unfold — The Reveal will show you everything.</div>}
-      {seated?.autopilot && <div className="banner">You missed 3 turns, so a warlord is holding your seat. <button className="small" onClick={() => chain.call('claim_seat_back', { match_id: match!.id })}>Take it back</button></div>}
+      {seated?.autopilot && (match?.status === 'Running' || match?.status === 'Resolving') && <div className="banner">You missed 3 turns, so a warlord is holding your seat. <button className="small" onClick={() => chain.call('claim_seat_back', { match_id: match!.id })}>Take it back</button></div>}
       {s.error && (
         <div className="banner bad">
           {s.error}{' '}
@@ -130,7 +135,7 @@ export function MatchScreen() {
 }
 
 function TopBar() {
-  const { match, view, chain, history, set } = useStore();
+  const { match, view, chain, history, set, sealedBy } = useStore();
   const now = useNow();
   if (!match || !chain) return null;
   const left = Math.max(0, match.deadline_ms - now);
@@ -148,14 +153,21 @@ function TopBar() {
           <span>{Math.ceil(left / 1000)}s</span>
         </div>
       )}
-      {match.status === 'Resolving' && <div className="resolving">resolving in the enclave…</div>}
+      {match.status === 'Resolving' && <div className="resolving">resolving…</div>}
       <div className="score">
-        {match.seats.map((seat, i) => (
-          <div key={i} className={`seat ${seat.alive ? '' : 'dead'} ${seat.account === chain.account ? 'me' : ''}`} style={{ ['--c' as string]: seatColor(i) }} title={seat.account}>
-            <i />{seatName(match, i, chain.account)} <b>{view?.seats[i]?.tiles ?? '–'}</b>
-          </div>
-        ))}
+        {match.seats.map((seat, i) => {
+          const human = !seat.ai && !seat.autopilot && seat.alive;
+          const done = match.status === 'Running' && human && sealedBy.includes(seat.account);
+          return (
+            <div key={i} className={`seat ${seat.alive ? '' : 'dead'} ${seat.account === chain.account ? 'me' : ''} ${done ? 'sealed' : ''}`} style={{ ['--c' as string]: seatColor(i) }}
+              title={`${seat.account}${match.status === 'Running' && human ? (done ? ' · sealed' : ' · still deciding') : ''}`}>
+              <i />{seatName(match, i, chain.account)} <b>{view?.seats[i]?.tiles ?? '–'}</b>
+              {match.status === 'Running' && human && <span className="seal-mark">{done ? '🔒' : '…'}</span>}
+            </div>
+          );
+        })}
       </div>
+      <MuteButton />
       <div className="shields" title="Every turn's proof. Click to inspect.">
         {history.map((h) => (
           <button key={h.turn} className="shield" onClick={() => set({ attestTurn: h.turn })}>⛨<sub>{h.turn}</sub></button>
@@ -169,13 +181,49 @@ function LobbyPanel() {
   const { match, chain } = useStore();
   if (!match || !chain) return null;
   const host = match.host === chain.account;
+  const open = Math.max(0, match.max_seats - match.seats.length - match.ai_seats);
   return (
-    <div className="panel float-center">
+    <div className="panel float-center lobby-panel">
       <h2>Lobby #{match.id}</h2>
-      <p>{match.seats.length} human{match.seats.length === 1 ? '' : 's'} seated, {match.ai_seats} warlord{match.ai_seats === 1 ? '' : 's'} reserved, {match.max_seats} seats.</p>
-      <ul className="plain">{match.seats.map((x) => <li key={x.account}>{x.account}</li>)}</ul>
-      {host ? <button className="primary" onClick={() => chain.call('start', { match_id: match.id })}>Start now (empty seats become warlords)</button> : <p className="muted">Waiting for the host to start.</p>}
-      <button className="link" onClick={() => chain.call('leave_lobby', { match_id: match.id })}>Leave</button>
+      <ul className="invite-seats">
+        {match.seats.map((x, i) => (
+          <li key={x.account}><i className="dot" style={{ background: seatColor(i) }} /> {seatName(match, i, chain.account)}{x.account === match.host ? <span className="muted"> · host</span> : null}</li>
+        ))}
+        {Array.from({ length: match.ai_seats }, (_, k) => <li key={`ai${k}`} className="muted"><i className="dot" /> AI warlord</li>)}
+        {Array.from({ length: open }, (_, k) => <li key={`e${k}`} className="empty">open seat</li>)}
+      </ul>
+      {open > 0 && <InviteBox id={match.id} />}
+      {host
+        ? <button className="primary" onClick={() => chain.call('start', { match_id: match.id }).catch((e) => useStore.getState().push((e as Error).message, 'bad'))}>Start now{open ? ' (open seats become warlords)' : ''}</button>
+        : <p className="muted">{open ? `Starts when the host says so, or by itself when the last ${open === 1 ? 'seat is' : `${open} seats are`} taken.` : 'Every seat is taken: starting…'}</p>}
+      <button className="link" onClick={() => chain.call('leave_lobby', { match_id: match.id }).then(() => { useStore.getState().resetMatch(); useStore.getState().set({ screen: 'lobby', matchId: null }); })}>Leave</button>
+    </div>
+  );
+}
+
+function InviteBox({ id }: { id: number }) {
+  const url = inviteUrl(id);
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(url); } catch {
+      // Clipboard blocked (http, old Safari): select the text so the player can copy it.
+      (document.querySelector('.invite-url') as HTMLInputElement | null)?.select();
+      return;
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
+  const share = typeof navigator.share === 'function'
+    ? () => navigator.share({ title: 'VEIL', text: 'Join my war in the fog', url }).catch(() => {})
+    : null;
+  return (
+    <div className="invite-box">
+      <p className="small">Invite friends: whoever opens this link takes a seat.</p>
+      <div className="row">
+        <input className="invite-url" readOnly value={url} onFocus={(e) => e.currentTarget.select()} />
+        <button className="small" onClick={copy}>{copied ? 'Copied ✓' : 'Copy'}</button>
+        {share && <button className="small" onClick={share}>Share</button>}
+      </div>
     </div>
   );
 }
@@ -190,12 +238,14 @@ function OrdersPanel() {
   if (!view || !match) return null;
   const used = spent();
   const locked = match.status !== 'Running';
+  const planning = useStore.getState().planning && match.status === 'Resolving';
   const send = async () => {
     setBusy(true); setErr(null);
     try { await sendOrders(); } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   };
   return (
-    <aside className="panel orders">
+    <aside className={`panel orders ${planning ? 'planning' : ''}`}>
+      {planning && <p className="plan-note"><b>Plan turn {match.turn + 1}</b> while this one resolves. Your plan carries over; anything the new board no longer allows is trimmed.</p>}
       <div className="aether">
         <span>Aether</span>
         <div className="bar"><i style={{ width: `${view.aether ? (100 * used) / view.aether : 0}%` }} /></div>
@@ -236,9 +286,9 @@ function OrdersPanel() {
       </ul>
       <Market />
       <button className="primary seal" disabled={busy || locked} onClick={send} style={{ ['--hold' as string]: `${Math.round(endHold * 100)}%` }}>
-        {locked ? 'Resolving…' : submittedTurn === match.turn ? '🔒 Sealed — update orders' : '🔒 Seal & send orders'} <Glyph h="endTurn" />
+        {planning ? `Sealing opens at turn ${match.turn + 1}` : locked ? 'Resolving…' : submittedTurn === match.turn ? '🔒 Sealed — update orders' : '🔒 Seal & send orders'} <Glyph h="endTurn" />
       </button>
-      <p className="muted small">Sealed in your browser to the enclave’s key for this match. The chain stores only ciphertext.</p>
+      <p className="muted small" title="Your orders are encrypted in this browser to a key that exists only inside the sealed machine running the game. The blockchain stores the encrypted bytes; other players and we see nothing until The Reveal.">Only the game’s sealed machine can read your orders. Not other players, not us.</p>
       {err && <div className="err">{err}</div>}
     </aside>
   );
@@ -320,6 +370,52 @@ function TileInfo({ index, tiles, board }: { index: number | null; tiles: Return
           ) : <span className="muted"> · remembered (out of sight)</span>}
         </>
       )}
+    </div>
+  );
+}
+
+function MuteButton() {
+  const [m, setM] = useState(isMuted());
+  useEffect(() => onMute(setM), []);
+  return <button className="ghost mute" title={m ? 'Sound off' : 'Sound on'} aria-label={m ? 'Unmute' : 'Mute'} onClick={() => setMuted(!m)}>{m ? '🔇' : '🔊'}</button>;
+}
+
+/** While the turn resolves: honest about what is happening and how long it usually takes. */
+function ResolvingCard() {
+  const { match, resolvingSince, resolveMs, sealedOrders } = useStore();
+  const now = useNow(500);
+  if (!match) return null;
+  const avg = resolveMs.length ? Math.round(resolveMs.reduce((a, b) => a + b, 0) / resolveMs.length / 1000) : null;
+  const el = resolvingSince ? Math.round((now - resolvingSince) / 1000) : null;
+  return (
+    <div className="resolving-card panel">
+      <div className="rc-row"><span className="rc-ok">✓</span> Orders sealed{sealedOrders ? ' (yours shown solid on the map)' : ''}</div>
+      <div className="rc-row live"><span className="rc-spin" /> The sealed machine is rolling the dice and fighting the battles{el != null ? ` · ${el}s` : ''}</div>
+      <div className="rc-row muted"><span className="rc-dot" /> The chain checks its proof, then the clouds move</div>
+      <p className="muted small">{avg ? `Recent turns took about ${avg}s.` : 'Usually 20–40 seconds on testnet.'} Plan your next move meanwhile.</p>
+    </div>
+  );
+}
+
+/** What just happened, for a few seconds after each turn. */
+function RecapCard() {
+  const recap = useStore((st) => st.recap);
+  const now = useNow(1000);
+  const [hidden, setHidden] = useState<number | null>(null);
+  if (!recap || hidden === recap.at || now - recap.at > 9000) return null;
+  const lines: string[] = [];
+  if (recap.won) lines.push(`⚔ Won ${recap.won} battle${recap.won > 1 ? 's' : ''}`);
+  if (recap.lost) lines.push(`☠ Lost ${recap.lost} battle${recap.lost > 1 ? 's' : ''}`);
+  if (recap.clashes) lines.push(`${recap.clashes} clash${recap.clashes > 1 ? 'es' : ''} in the open sky`);
+  if (!recap.won && !recap.lost && !recap.clashes) lines.push('No battles this turn');
+  lines.push(`${recap.tiles} island${recap.tiles === 1 ? '' : 's'}${recap.tilesDelta ? ` (${recap.tilesDelta > 0 ? '+' : ''}${recap.tilesDelta})` : ''}`);
+  lines.push(`${recap.aether} aether (+${recap.income}/turn)`);
+  return (
+    <div className={`recap panel ${recap.lost && !recap.won ? 'bad' : recap.won ? 'good' : ''}`} onClick={() => setHidden(recap.at)} role="status">
+      <h3>Turn {recap.turn}</h3>
+      <div className="recap-lines">{lines.map((l) => <span key={l}>{l}</span>)}</div>
+      {recap.fallen.map((f) => <p key={f} className="fallen">{f} {f === 'You' ? 'have' : 'has'} fallen</p>)}
+      {recap.plan && <p className="muted small">Your plan carried over{recap.plan.trimmed ? `, ${recap.plan.trimmed} order${recap.plan.trimmed > 1 ? 's' : ''} trimmed` : ''}. Check it, then seal.</p>}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import type { Match } from '../chain/types';
 import { createMatch, joinMatch, openMatch } from './lobbyActions';
+import { callsign } from '../game/callsign';
 import { WARLORDS, warlordName } from '../game/warlords';
 
 const usd = (micro: string) => `$${(Number(micro) / 1e6).toFixed(2)}`;
@@ -121,6 +122,7 @@ export function Lobby() {
           {open.map((m) => (
             <div key={m.id} className="match-row">
               <b>#{m.id}</b>
+              <span className="muted">{callsign(m.host)}’s war</span>
               <span>{m.mode === 'Practice' ? 'Practice' : `Stakes ${usd(m.mode.Stakes.buy_in)}`}</span>
               <span>{m.seats.length + m.ai_seats}/{m.max_seats} seats</span>
               <button className="small" disabled={busy} onClick={() => act(() => joinMatch(m.id, m.mode))}>Join</button>

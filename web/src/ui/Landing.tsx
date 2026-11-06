@@ -8,6 +8,7 @@ import { quickPractice } from './lobbyActions';
 import { Logo } from './Logo';
 import { useInput } from '../input/inputMode';
 import { Glyph } from '../input/glyphs';
+import { callsign } from '../game/callsign';
 
 const RUNES = ['ᚠ', 'ᚱ', 'ᛉ', 'ᚦ'];
 
@@ -47,6 +48,7 @@ export function Landing() {
           <button className="link" disabled={!chain} onClick={() => set({ screen: 'vault' })}>Private vault</button>
         </div>
         <p className="intro-tag">A strategy game where even the developer can’t see the map.</p>
+        {chain && <p className="intro-who">You fight as <b>{callsign(chain.account)}</b></p>}
         <p className="pad-hint">{pad ? `🎮 ${family === 'playstation' ? 'PlayStation' : family === 'xbox' ? 'Xbox' : ''} controller ready` : '🎮 Controller? Press any button on it'}</p>
         {err && <div className="err">{err}</div>}
       </main>

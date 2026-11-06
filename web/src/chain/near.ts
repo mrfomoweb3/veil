@@ -10,12 +10,10 @@ import '../shims/node';
 import { Account, Connection, InMemorySigner, KeyPair, keyStores, providers } from 'near-api-js';
 import { actionCreators, encodeSignedDelegate } from '@near-js/transactions';
 import type { Chain, VeilEvent } from './types';
+import { RotatingProvider, rpcUrls } from './rpc';
 
 const env = import.meta.env;
-const RPC: Record<string, string> = {
-  testnet: (env.VITE_NEAR_RPC as string) || 'https://rpc.testnet.fastnear.com',
-  mainnet: (env.VITE_NEAR_RPC as string) || 'https://rpc.mainnet.fastnear.com',
-};
+
 const CONTRACT = (env.VITE_VEIL_CONTRACT as string) || 'veil.testnet';
 const RELAYER = (env.VITE_RELAYER_URL as string) || 'http://localhost:8790';
 const OUTLAYER_API = (env.VITE_OUTLAYER_API as string) || 'https://testnet-api.outlayer.ai';
@@ -48,7 +46,7 @@ export class NearChain implements Chain {
     const accountId = Array.from(pk.data, (x) => x.toString(16).padStart(2, '0')).join('');
     const store = new keyStores.InMemoryKeyStore();
     await store.setKey(network, accountId, keyPair);
-    const provider = new providers.JsonRpcProvider({ url: RPC[network] });
+    const provider = new RotatingProvider(rpcUrls(network, env.VITE_NEAR_RPC as string | undefined));
     const connection = new Connection(network, provider, new InMemorySigner(store), '');
     const acct = new Account(connection, accountId);
     const chain = new NearChain(network, accountId, acct, provider, keyPair);
