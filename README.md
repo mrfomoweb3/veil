@@ -4,6 +4,8 @@ A fog-of-war strategy game where **even the developer cannot see the map**. Hidd
 
 Tracks: **games** (primary), **privacy**, **open**. Built at NEAR HACKATHON.
 
+**Live on NEAR testnet:** contract [`veil-clouds.testnet`](https://testnet.nearblocks.io/address/veil-clouds.testnet), engine on OutLayer as project `veil-clouds.testnet/veil-engine`. Full matches have been played through the real enclave there and verified in the browser by The Reveal.
+
 ## Try it in 60 seconds (local Practice)
 
 Prerequisites: Rust (with targets `wasm32-unknown-unknown`, `wasm32-wasip2`), Node 20+.
@@ -55,7 +57,35 @@ Details: [docs/protocol.md](docs/protocol.md) · [docs/threat-model.md](docs/thr
 | Verifiable dice | OutLayer VRF, verified on chain with `env::ed25519_verify` | `engine/src/lib.rs`, `contracts/veil/src/lib.rs` (`verify_vrf`) |
 | AI warlords that see only their own fog | NEAR AI Cloud (Confidential-TEE models), called from inside the enclave | `engine/src/ai.rs` |
 | No gas, no popups | NEP-366 meta-transactions, implicit accounts | `relayer/`, `web/src/chain/near.ts` |
-| Buy-ins / payouts | USDC on NEAR via `ft_transfer_call`; 1Click in/out (planned, see Limitations) | `contracts/veil/src/lib.rs` (`ft_on_transfer`, `claim`) |
+| Buy-ins / payouts | USDC on NEAR via `ft_transfer_call`, pull-based `claim` | `contracts/veil/src/lib.rs` (`ft_on_transfer`, `claim`) |
+| Warlords with their own wallets | Per-warlord USDC treasuries in the contract; intel and truces sold in-game, priced by each warlord's AI | `contracts/veil/src/lib.rs`, `crates/veil-rules` (market) |
+| Your NEAR account controls a Base address | **Chain Signatures** (`v1.signer-prod.testnet`, path `veil-base-1`); the relayer pays for `sign`, so no second wallet and no gas | `web/src/privacy/chainSig.ts`, `chainSigSigner.ts`, `relayer/policy.mjs` |
+| Winnings NEAR → Base | **NEAR Intents** (1Click): NEAR USDC → Base USDC, plus a $0.30 leg → Base ETH for gas when needed | `web/src/privacy/bridge.ts` |
+| Private cash-out | **Gloam** (`@gloamtrade/sdk`, an existing library): shield into the pool, unshield through Gloam's relay | `web/src/privacy/` |
+
+## Cash out privately
+
+Winnings are paid in USDC on NEAR. From the end screen, **Cash out privately** takes them into a private balance on Base and out to any address, without a second wallet:
+
+```
+claim (NEAR) ──1Click──▶ your Base address ──shield──▶ Gloam pool ──unshield via Gloam's relay──▶ any address
+                         (derived from your NEAR       (deposit is      (zero-knowledge proof; the relay
+                          account, Chain Signatures)    public)          submits it, the proof fixes the recipient)
+```
+
+What is private, stated plainly (the same text is in the app under *What stays private?*):
+
+- **Public:** the NEAR → Base transfer; the Base address (anyone can derive it from your NEAR account); that it deposited into Gloam, and how much.
+- **Private after the deposit:** which deposit a cash-out came from, and where the money went. Gloam's relay sends the cash-out, so your address is not on it.
+- **Your part:** cash out to a fresh address and wait a while; an identical amount moments later is easy to match.
+
+Safety rails: each note is saved (AES-GCM, key derived from a NEP-413 signature by your NEAR account) **before** its deposit is broadcast; the first deposit forces a backup download; every Chain Signatures answer is recovered and must match your derived address before anything is broadcast; the vault's live per-deposit limits split large amounts.
+
+On testnet, 1Click does not exist, so the Base Sepolia address is funded from faucets (the app says so and shows a live mainnet quote instead).
+
+## Controls
+
+Mouse, touch, keyboard, or a gamepad (DualSense, DualShock 4, Xbox) for the whole game, menus and vault included. One radial order menu for every input: right-click, long-press, or Square/X on the cursor tile. Glyphs follow the pad you hold; `?lite` turns on performance mode.
 
 ## Repository
 
@@ -88,8 +118,9 @@ scripts/             build / upload / deploy / simulate
 
 ## Limitations and next steps
 
-- Not yet deployed to testnet: needs the OutLayer login, a funded testnet account and the relayer key (human steps; scripts are ready).
-- 1Click buy-in from other chains and confidential "withdraw anywhere" are not built yet; Stakes currently takes USDC on NEAR directly.
+- 1Click buy-in from other chains is not built; Stakes takes USDC on NEAR directly. The cash-out leg (NEAR → Base) is built; it runs on mainnet only, and has been checked with live dry quotes, not with real money.
+- On Base Sepolia, Chain Signatures signing is verified (a fresh testnet account's MPC signature recovers to its derived address), but a broadcast deposit and cash-out need faucet ETH and test USDC in that address first.
+- The OutLayer secrets row holds only the model name, so warlords play with the heuristic bot until a NEAR AI key is added.
 - Social login (Privy) is not built; players get a browser-held implicit account created by the relayer.
 - A retried resolve gets a new VRF value (its alpha contains the request id). We never see a result before it lands, so this is not exploitable by us, but it is a property, not a guarantee.
 - Bot balance: the heuristic warlords fight a lot but rarely take capitals; the aether economy needs tuning with real players.

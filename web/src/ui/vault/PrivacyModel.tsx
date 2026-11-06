@@ -9,6 +9,7 @@ export function PrivacyModel({ onClose }: { onClose: () => void }) {
         <h3>Public</h3>
         <ul>
           <li>The transfer from NEAR to Base, and the Base address it lands in.</li>
+          <li>That this Base address belongs to your NEAR account. It is derived from your account name with NEAR Chain Signatures, so anyone can work it out.</li>
           <li>That this address deposited into Gloam, and how much. The amount is a public input to the deposit.</li>
         </ul>
         <h3>Private after the deposit</h3>

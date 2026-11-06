@@ -82,8 +82,22 @@ function delegateResult(o, receiver) {
   return mine.length ? decode(mine[mine.length - 1].outcome.status.SuccessValue) : null;
 }
 
-async function crank(method, args) {
-  if (!CRANKABLE.has(method)) throw new Error('not crankable');
+// One crank per match and method at a time. A browser cranks resolve_turn the moment every
+// human has sealed, and so does the loop below; both arrive here, and the second would only
+// burn gas on a call the contract then refuses. It waits for the first instead.
+const cranking = new Map();
+function crank(method, args) {
+  if (!CRANKABLE.has(method)) return Promise.reject(new Error('not crankable'));
+  const key = `${method}:${args?.match_id}`;
+  const running = cranking.get(key);
+  if (running) return running.then(() => ({ pending: true, joined: true }), () => ({ pending: true, joined: true }));
+  // Keep the slot a few seconds after it lands, until RPC reads show the new match state.
+  const p = crankOnce(method, args).finally(() => setTimeout(() => cranking.delete(key), 6000));
+  cranking.set(key, p);
+  return p;
+}
+
+async function crankOnce(method, args) {
   let o;
   try {
     o = await relayer.functionCall({ contractId: CONTRACT, methodName: method, args, gas: 300n * TGAS, attachedDeposit: DEPOSIT });
