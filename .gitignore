@@ -8,3 +8,6 @@ dist/
 keys/
 devnet/data/
 .DS_Store
+
+# TypeScript incremental cache: hid type errors when committed
+*.tsbuildinfo

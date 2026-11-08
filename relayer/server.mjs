@@ -192,6 +192,8 @@ createServer(async (req, res) => {
   if (req.method === 'OPTIONS') return res.end();
   const send = (code, body) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
   const path = new URL(req.url, 'http://x').pathname;
+  // Liveness for the host (Fly.io checks it); says which network and contract this relayer serves.
+  if (path === '/health' && req.method === 'GET') return send(200, { ok: true, network: NETWORK, contract: CONTRACT, relayer: RELAYER });
   const h = handlers[path];
   if ((!h && path !== '/gloam-relay') || req.method !== 'POST') return send(404, { error: 'not found' });
   let raw = '';

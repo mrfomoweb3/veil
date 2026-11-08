@@ -1,0 +1,40 @@
+# Fly.io app for the VEIL relayer (testnet). Deploy from this folder: `fly deploy`.
+# Secrets (set once, never in this file): RELAYER_PRIVATE_KEY, NEAR_RPC (if it carries an API key).
+# See docs/DEPLOY.md.
+app = "veil-relayer"
+primary_region = "fra"
+
+[build]
+
+[env]
+  NEAR_NETWORK = "testnet"
+  VEIL_CONTRACT = "veil-clouds.testnet"
+  RELAYER_ACCOUNT = "veil-clouds-relay.testnet"
+  MPC_CONTRACT = "v1.signer-prod.testnet"
+  ENGINE_DEPOSIT_NEAR = "0.05"
+  ONBOARD_NEAR = "0.01"
+  CRANK_EVERY_MS = "5000"
+  PORT = "8790"
+  # Overridden by the NEAR_RPC secret when you have a keyed RPC.
+  NEAR_RPC = "https://test.rpc.fastnear.com,https://near-testnet.drpc.org,https://rpc.testnet.fastnear.com,https://rpc.testnet.near.org"
+  # The Vercel production URL (and any preview URL you want to allow), comma-separated.
+  ALLOWED_ORIGINS = "https://veil-game.vercel.app"
+
+[http_service]
+  internal_port = 8790
+  force_https = true
+  # The cranker resolves turns and reveals matches on a timer, so the machine must never sleep.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "15s"
+    interval = "30s"
+    method = "GET"
+    path = "/health"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
