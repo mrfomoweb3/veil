@@ -60,4 +60,7 @@ test('an RPC that refuses moves on; an answer from the chain does not', () => {
 
 test('logs name the host only', () => {
   assert.equal(hostOf('https://abc.near-testnet.quiknode.pro/SECRETTOKEN/?apiKey=K'), 'https://abc.near-testnet.quiknode.pro');
+  // A missing slash glues the token onto the host: it must still not be logged.
+  const glued = hostOf('https://abc.near-testnet.quiknode.pro' + 'f'.repeat(40));
+  assert.ok(!glued.includes('f'.repeat(20)), glued);
 });

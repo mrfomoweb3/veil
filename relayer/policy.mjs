@@ -70,7 +70,10 @@ export function endpointRefused(e) {
   return /-429|\b429\b|Rate limits exceeded|Too Many Requests|UNAUTHORIZED|Unauthorized|Forbidden|invalid api key|FetchError|Failed to fetch|fetch failed|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up|Exceeded \d+ attempts|Request timeout on the free plan|upgrade to paid plan/i.test(e?.message ?? '');
 }
 
-/** An endpoint for logs: scheme and host only, so a key in the path or query never lands in a log. */
+/** An endpoint for logs: scheme and host only, so a key in the path or query never lands in a
+ *  log. A malformed URL can glue the key onto the host (`…quiknode.pro<token>` with the slash
+ *  missing), so any long token-like run in the host is masked as well. */
+export const maskTokens = (s) => String(s).replace(/[A-Za-z0-9_-]{24,}/g, (t) => `${t.slice(0, 4)}…(${t.length} chars hidden)`);
 export function hostOf(url) {
-  try { const u = new URL(url); return `${u.protocol}//${u.host}`; } catch { return '(bad url)'; }
+  try { const u = new URL(url); return maskTokens(`${u.protocol}//${u.host}`); } catch { return '(bad url)'; }
 }

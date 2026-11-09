@@ -17,7 +17,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { actionCreators, SCHEMA } = require('@near-js/transactions');
 const { deserialize } = require('borsh');
-import { checkDelegate, CRANKABLE, endpointRefused, hostOf, implicitMatches, RateLimit } from './policy.mjs';
+import { checkDelegate, CRANKABLE, endpointRefused, hostOf, implicitMatches, maskTokens, RateLimit } from './policy.mjs';
 
 const env = (k, d) => process.env[k] ?? d ?? (() => { throw new Error(`${k} is required`); })();
 const NETWORK = env('NEAR_NETWORK', 'testnet');
@@ -59,7 +59,7 @@ class RotatingProvider extends providers.JsonRpcProvider {
         return r;
       } catch (e) {
         if (!endpointRefused(e)) throw e;
-        console.warn(`RPC: ${hostOf(this.all[i].connection.url)} refused ${method}: ${String(e?.message ?? e).replace(/https?:\/\/\S+/g, '(url)').slice(0, 120)}`);
+        console.warn(`RPC: ${hostOf(this.all[i].connection.url)} refused ${method}: ${maskTokens(String(e?.message ?? e).replace(/https?:\/\/\S+/g, '(url)')).slice(0, 120)}`);
         last = e;
       }
     }
@@ -67,6 +67,12 @@ class RotatingProvider extends providers.JsonRpcProvider {
   }
 }
 const rpcUrls = env('NEAR_RPC', `https://rpc.${NETWORK}.fastnear.com`).split(',').map((u) => u.trim()).filter(Boolean);
+rpcUrls.forEach((u, k) => {
+  let host = '';
+  try { host = new URL(u).hostname; } catch { return console.warn(`NEAR_RPC entry ${k + 1} is not a URL; it will fail`); }
+  // `https://x.quiknode.pro<token>/` (slash missing) glues the key onto the host name.
+  if (/[A-Za-z0-9_-]{24,}/.test(host)) console.warn(`NEAR_RPC entry ${k + 1} looks malformed: ${hostOf(u)} (missing "/" before the key?)`);
+});
 const provider = new RotatingProvider(rpcUrls);
 const sendProvider = provider;
 const relayer = new Account(new Connection(NETWORK, sendProvider, new InMemorySigner(store), ''), RELAYER);
