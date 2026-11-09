@@ -1,0 +1,110 @@
+{
+ "voice": "a3a4aa242aaf431ea8ec2c4b3bb332fa",
+ "lang": "en",
+ "lines": [
+  {
+   "id": "s01",
+   "text": "In an online strategy game, the server sees the whole map. On a public blockchain, everyone does."
+  },
+  {
+   "id": "s02",
+   "text": "So you either trust whoever runs the game, or you keep no secrets."
+  },
+  {
+   "id": "s03",
+   "text": "Veil is a third way: a war in the clouds where nobody can see the map. Not the players. Not even me."
+  },
+  {
+   "id": "s04",
+   "text": "The game is the demonstration. Anything that needs a secret on a public chain works the same way: cards, auctions, sealed bids."
+  },
+  {
+   "id": "s05",
+   "text": "I open the link. No wallet, no sign-up. A relayer creates my NEAR account and pays every fee."
+  },
+  {
+   "id": "s06",
+   "text": "I open a lobby and send a friend one link. When every seat is taken, the war starts by itself."
+  },
+  {
+   "id": "s07",
+   "text": "I see my capital and nothing else. The real map lives where nobody can look."
+  },
+  {
+   "id": "s08",
+   "text": "Inside an OutLayer enclave: Intel T D X hardware running the game engine in memory even its operator can't read."
+  },
+  {
+   "id": "s09",
+   "text": "I march, recruit, and seal my orders. My browser encrypts them to a key that exists only inside that enclave."
+  },
+  {
+   "id": "s10",
+   "text": "The NEAR contract holds the ciphertext and keeps the clock. Everyone sees that I sealed, never what."
+  },
+  {
+   "id": "s11",
+   "text": "Once everyone has sealed, the enclave opens the orders, fights the battles, and sends each player only their own view."
+  },
+  {
+   "id": "s12",
+   "text": "The dice come from a verifiable random function. The contract checks every roll's proof before it accepts the turn."
+  },
+  {
+   "id": "s13",
+   "text": "Empty seats go to AI warlords. They decide inside the enclave too, from their own fog only."
+  },
+  {
+   "id": "s14",
+   "text": "Each has its own wallet and trades what it knows. I buy intel on an island under my cloud."
+  },
+  {
+   "id": "s15",
+   "text": "Or a truce, so it holds back. Prices change every turn, and every trade is part of the rules."
+  },
+  {
+   "id": "s16",
+   "text": "When the war ends, the enclave publishes everything it hid: every order, every roll, and the match key."
+  },
+  {
+   "id": "s17",
+   "text": "My browser re-runs the whole match with the same Rust code and checks it against the chain."
+  },
+  {
+   "id": "s18",
+   "text": "Verified."
+  },
+  {
+   "id": "s19",
+   "text": "Hidden while you play. Provable when it ends. That's what Veil is here to show."
+  },
+  {
+   "id": "s20",
+   "text": "Winnings get the same care. Through Chain Signatures, my NEAR account controls an address on Base: no second wallet."
+  },
+  {
+   "id": "s21",
+   "text": "On mainnet, NEAR Intents carries the winnings across. Here on testnet, a faucet stands in."
+  },
+  {
+   "id": "s22",
+   "text": "I seal them into Gloam's private pool. Later, a zero-knowledge proof cashes them out to any address I choose."
+  },
+  {
+   "id": "s23",
+   "text": "Gloam's relay sends that transaction, so my address never appears next to it."
+  },
+  {
+   "id": "s24",
+   "text": "Mouse, touch, keyboard or gamepad: one radial menu gives every order."
+  },
+  {
+   "id": "s25",
+   "text": "Veil. A strategy game where even the developer can't see the map. Play it at veil dot mister fomo labs dot x y z."
+  }
+ ],
+ "bgm": {
+  "mode": "retrieve",
+  "query": "epic driving cinematic trailer, pulsing hybrid percussion, tense building synth ostinato, 120 bpm, gripping"
+ }
+}

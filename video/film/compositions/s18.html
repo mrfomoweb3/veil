@@ -1,0 +1,30 @@
+<template>
+  <style>
+@font-face { font-family: 'Cinzel'; font-weight: 700 800; src: url('assets/fonts/Cinzel-latin.woff2') format('woff2'); }
+#root { position: absolute; inset: 0; overflow: hidden; background: #17122b; font-family: Inter, sans-serif; color: #efe6d6; }
+.shot { position: absolute; inset: 0; overflow: hidden; }
+.cam { position: absolute; inset: 0; will-change: transform; }
+.cam img { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; }
+.dim { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 70% at 50% 45%, rgba(23,18,43,0) 30%, rgba(23,18,43,.55) 100%); }
+.term { position: absolute; transform: translate(-50%, -50%); }
+.term-in { background: rgba(28,21,52,.94); border: 1.5px solid rgba(255,217,138,.55); border-radius: 14px; padding: 16px 26px 18px; text-align: center; box-shadow: 0 18px 40px rgba(8,5,20,.45); }
+.term-in b { display: block; font: 800 44px/1.05 'Cinzel', serif; color: #ffd98a; letter-spacing: .02em; }
+.term-in span { display: block; margin-top: 8px; font: 600 30px/1.25 Inter, sans-serif; color: #efe6d6; }
+.title { position: absolute; left: 0; right: 0; bottom: 96px; text-align: center; }
+.title-in { display: inline-block; background: rgba(23,18,43,.9); border-radius: 18px; padding: 22px 44px 26px; border: 1.5px solid rgba(255,217,138,.5); }
+.title-in b { display: block; font: 800 78px/1 'Cinzel', serif; color: #ffd98a; letter-spacing: .02em; }
+.title-in span { display: block; margin-top: 12px; font: 600 30px/1.25 Inter, sans-serif; color: #efe6d6; }
+
+.stamp{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:6px solid #69db7c;color:#69db7c;font:800 120px/1 Cinzel,serif;padding:18px 54px;border-radius:18px;background:rgba(23,18,43,.82);letter-spacing:.06em}
+  </style>
+  <div data-hf-id="hf-l68n" id="root" data-composition-id="s18" data-width="1920" data-height="1080" data-layout-allow-overlap data-layout-allow-occlusion>
+        <div data-hf-id="hf-s1yd" id="s18-shot0" class="shot clip" data-start="0.0" data-duration="1.469"><div data-hf-id="hf-3qbd" id="s18-cam0" class="cam"><img data-hf-id="hf-bgcg" src="assets/shots/15-reveal-verified.png" alt=""></div><div data-hf-id="hf-y8te" class="dim"></div></div>
+    <div data-hf-id="hf-bqmr" id="s18-s" class="clip" data-start="0.2" data-duration="1.269" style="position:absolute;inset:0;z-index:12"><div data-hf-id="hf-axyz" class="stamp" id="s18-st">VERIFIED</div></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#s18-cam0", {scale:2.7, x:-1632.0, y:918.0, transformOrigin:"50% 50%"}, {scale:2.9, x:-1824.0, y:1026.0, transformOrigin:"50% 50%", duration:0.90, ease:"power3.inOut"}, 0.050);
+    tl.fromTo("#s18-st", {scale:2, opacity:0, rotate:-8}, {scale:1, opacity:1, rotate:-4, duration:.3, ease:"power4.in"}, 0.2);
+    window.__timelines["s18"] = tl;
+  </script>
+</template>

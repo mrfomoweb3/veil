@@ -11,3 +11,12 @@ devnet/data/
 
 # TypeScript incremental cache: hid type errors when committed
 *.tsbuildinfo
+
+# Demo film: generated media and renders stay out of git (rebuild with video/film/build.py)
+video/film/assets/
+video/film/renders/
+video/film/.hyperframes/
+video/film/node_modules/
+video/film/.thumbnails/
+video/film/.waveform-cache/
+video/film/.media/

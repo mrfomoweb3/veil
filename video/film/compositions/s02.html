@@ -1,0 +1,35 @@
+<template>
+  <style>
+@font-face { font-family: 'Cinzel'; font-weight: 700 800; src: url('assets/fonts/Cinzel-latin.woff2') format('woff2'); }
+#root { position: absolute; inset: 0; overflow: hidden; background: #17122b; font-family: Inter, sans-serif; color: #efe6d6; }
+.shot { position: absolute; inset: 0; overflow: hidden; }
+.cam { position: absolute; inset: 0; will-change: transform; }
+.cam img { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; }
+.dim { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 70% at 50% 45%, rgba(23,18,43,0) 30%, rgba(23,18,43,.55) 100%); }
+.term { position: absolute; transform: translate(-50%, -50%); }
+.term-in { background: rgba(28,21,52,.94); border: 1.5px solid rgba(255,217,138,.55); border-radius: 14px; padding: 16px 26px 18px; text-align: center; box-shadow: 0 18px 40px rgba(8,5,20,.45); }
+.term-in b { display: block; font: 800 44px/1.05 'Cinzel', serif; color: #ffd98a; letter-spacing: .02em; }
+.term-in span { display: block; margin-top: 8px; font: 600 30px/1.25 Inter, sans-serif; color: #efe6d6; }
+.title { position: absolute; left: 0; right: 0; bottom: 96px; text-align: center; }
+.title-in { display: inline-block; background: rgba(23,18,43,.9); border-radius: 18px; padding: 22px 44px 26px; border: 1.5px solid rgba(255,217,138,.5); }
+.title-in b { display: block; font: 800 78px/1 'Cinzel', serif; color: #ffd98a; letter-spacing: .02em; }
+.title-in span { display: block; margin-top: 12px; font: 600 30px/1.25 Inter, sans-serif; color: #efe6d6; }
+
+.half{position:absolute;top:0;bottom:0;width:50%;} .half b{position:absolute;bottom:120px;left:0;right:0;text-align:center;font:800 64px/1 Cinzel,serif;letter-spacing:.04em;color:#ffd98a}
+  </style>
+  <div data-hf-id="hf-acrc" id="root" data-composition-id="s02" data-width="1920" data-height="1080" data-layout-allow-overlap data-layout-allow-occlusion>
+        <div data-hf-id="hf-yvlp" id="s02-shot0" class="shot clip" data-start="0.0" data-duration="5.051"><div data-hf-id="hf-9afe" id="s02-cam0" class="cam"><img data-hf-id="hf-bgcg" src="assets/shots/15-reveal-verified.png" alt=""></div><div data-hf-id="hf-y8te" class="dim"></div></div>
+    <div data-hf-id="hf-evc1" id="s02-l" class="clip half" data-start="1.053" data-duration="3.998" style="left:0;background:rgba(23,18,43,.72);z-index:5"><b data-hf-id="hf-nnuq" id="s02-lt">TRUST</b></div>
+    <div data-hf-id="hf-7vus" id="s02-r" class="clip half" data-start="3.528" data-duration="1.523" style="left:50%;z-index:5"><b data-hf-id="hf-hde0" id="s02-rt">NO SECRETS</b></div>
+    <div data-hf-id="hf-fqsd" id="s02-bar" class="clip" data-start="1.053" data-duration="3.998" style="position:absolute;left:958px;top:0;width:4px;height:1080px;background:#ffd98a;z-index:6"></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#s02-cam0", {scale:1.45, x:222.7, y:-94.0, transformOrigin:"50% 50%"}, {scale:1.45, x:222.7, y:-94.0, transformOrigin:"50% 50%", duration:0.90, ease:"power3.inOut"}, 0.050);
+    tl.fromTo("#s02-cam0", {scale:1.45}, {scale:1.515, duration:4.101, ease:"none", immediateRender:false}, 0.950);
+    tl.fromTo("#s02-lt", {opacity:0, scale:1.15}, {opacity:1, scale:1, duration:.3, ease:"power3.out"}, 1.053);
+    tl.fromTo("#s02-rt", {opacity:0, scale:1.15}, {opacity:1, scale:1, duration:.3, ease:"power3.out"}, 3.528);
+    tl.fromTo("#s02-bar", {scaleY:0}, {scaleY:1, duration:.4, ease:"power3.inOut"}, 1.053);
+    window.__timelines["s02"] = tl;
+  </script>
+</template>

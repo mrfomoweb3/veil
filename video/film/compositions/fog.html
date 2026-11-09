@@ -1,0 +1,36 @@
+<template>
+  <style>
+.fog { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.fog-in { position: absolute; top: -10%; left: -20%; width: 140%; height: 120%;
+  background:
+    radial-gradient(ellipse 18% 30% at 20% 30%, #fbe9e6 60%, transparent 62%),
+    radial-gradient(ellipse 22% 34% at 38% 60%, #f3dada 60%, transparent 62%),
+    radial-gradient(ellipse 20% 28% at 55% 25%, #fbe9e6 60%, transparent 62%),
+    radial-gradient(ellipse 24% 36% at 72% 62%, #f0d3d3 60%, transparent 62%),
+    radial-gradient(ellipse 18% 30% at 88% 30%, #fbe9e6 60%, transparent 62%),
+    linear-gradient(90deg, transparent 8%, #f3dada 22%, #f3dada 78%, transparent 92%); }
+#root { position: absolute; inset: 0; pointer-events: none; }
+  </style>
+  <div data-hf-id="hf-dk6r" id="root" data-composition-id="fog" data-width="1920" data-height="1080" data-layout-allow-overlap data-layout-allow-occlusion>
+    <div data-hf-id="hf-y846" id="fog-s03" class="clip fog" data-start="12.038" data-duration=".9" style="z-index:50"><div data-hf-id="hf-75c8" class="fog-in" id="fogi-s03"></div></div>
+    <div data-hf-id="hf-fae3" id="fog-s05" class="clip fog" data-start="29.79" data-duration=".9" style="z-index:50"><div data-hf-id="hf-z946" class="fog-in" id="fogi-s05"></div></div>
+    <div data-hf-id="hf-kmw8" id="fog-s08" class="clip fog" data-start="50.866" data-duration=".9" style="z-index:50"><div data-hf-id="hf-ql8b" class="fog-in" id="fogi-s08"></div></div>
+    <div data-hf-id="hf-wsdf" id="fog-s13" class="clip fog" data-start="88.307" data-duration=".9" style="z-index:50"><div data-hf-id="hf-6vmr" class="fog-in" id="fogi-s13"></div></div>
+    <div data-hf-id="hf-x8jf" id="fog-s16" class="clip fog" data-start="109.07" data-duration=".9" style="z-index:50"><div data-hf-id="hf-o3x2" class="fog-in" id="fogi-s16"></div></div>
+    <div data-hf-id="hf-a7n0" id="fog-s20" class="clip fog" data-start="129.395" data-duration=".9" style="z-index:50"><div data-hf-id="hf-zbd5" class="fog-in" id="fogi-s20"></div></div>
+    <div data-hf-id="hf-qltq" id="fog-s21" class="clip fog" data-start="138.352" data-duration=".9" style="z-index:50"><div data-hf-id="hf-yjpc" class="fog-in" id="fogi-s21"></div></div>
+    <div data-hf-id="hf-avku" id="fog-s25" class="clip fog" data-start="163.352" data-duration=".9" style="z-index:50"><div data-hf-id="hf-jq3o" class="fog-in" id="fogi-s25"></div></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#fogi-s03", {xPercent:-115}, {xPercent:115, duration:.9, ease:"power2.inOut"}, 12.038);
+    tl.fromTo("#fogi-s05", {xPercent:-115}, {xPercent:115, duration:.9, ease:"power2.inOut"}, 29.79);
+    tl.fromTo("#fogi-s08", {xPercent:-115}, {xPercent:115, duration:.9, ease:"power2.inOut"}, 50.866);
+    tl.fromTo("#fogi-s13", {xPercent:-115}, {xPercent:115, duration:.9, ease:"power2.inOut"}, 88.307);
+    tl.fromTo("#fogi-s16", {xPercent:-115}, {xPercent:115, duration:.9, ease:"power2.inOut"}, 109.07);
+    tl.fromTo("#fogi-s20", {xPercent:-115}, {xPercent:115, duration:.9, ease:"power2.inOut"}, 129.395);
+    tl.fromTo("#fogi-s21", {xPercent:-115}, {xPercent:115, duration:.9, ease:"power2.inOut"}, 138.352);
+    tl.fromTo("#fogi-s25", {xPercent:-115}, {xPercent:115, duration:.9, ease:"power2.inOut"}, 163.352);
+    window.__timelines["fog"] = tl;
+  </script>
+</template>

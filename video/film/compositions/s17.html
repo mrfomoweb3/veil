@@ -1,0 +1,31 @@
+<template>
+  <style>
+@font-face { font-family: 'Cinzel'; font-weight: 700 800; src: url('assets/fonts/Cinzel-latin.woff2') format('woff2'); }
+#root { position: absolute; inset: 0; overflow: hidden; background: #17122b; font-family: Inter, sans-serif; color: #efe6d6; }
+.shot { position: absolute; inset: 0; overflow: hidden; }
+.cam { position: absolute; inset: 0; will-change: transform; }
+.cam img { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; }
+.dim { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 70% at 50% 45%, rgba(23,18,43,0) 30%, rgba(23,18,43,.55) 100%); }
+.term { position: absolute; transform: translate(-50%, -50%); }
+.term-in { background: rgba(28,21,52,.94); border: 1.5px solid rgba(255,217,138,.55); border-radius: 14px; padding: 16px 26px 18px; text-align: center; box-shadow: 0 18px 40px rgba(8,5,20,.45); }
+.term-in b { display: block; font: 800 44px/1.05 'Cinzel', serif; color: #ffd98a; letter-spacing: .02em; }
+.term-in span { display: block; margin-top: 8px; font: 600 30px/1.25 Inter, sans-serif; color: #efe6d6; }
+.title { position: absolute; left: 0; right: 0; bottom: 96px; text-align: center; }
+.title-in { display: inline-block; background: rgba(23,18,43,.9); border-radius: 18px; padding: 22px 44px 26px; border: 1.5px solid rgba(255,217,138,.5); }
+.title-in b { display: block; font: 800 78px/1 'Cinzel', serif; color: #ffd98a; letter-spacing: .02em; }
+.title-in span { display: block; margin-top: 12px; font: 600 30px/1.25 Inter, sans-serif; color: #efe6d6; }
+
+
+  </style>
+  <div data-hf-id="hf-oy6q" id="root" data-composition-id="s17" data-width="1920" data-height="1080" data-layout-allow-overlap data-layout-allow-occlusion>
+        <div data-hf-id="hf-8p4r" id="s17-shot0" class="shot clip" data-start="0.0" data-duration="5.648"><div data-hf-id="hf-ot4k" id="s17-cam0" class="cam"><img data-hf-id="hf-bgcg" src="assets/shots/15-reveal-verified.png" alt=""></div><div data-hf-id="hf-y8te" class="dim"></div></div>
+    <div data-hf-id="hf-ztbr" id="s17-term0" class="term clip" data-start="3.059" data-duration="2.589" style="left:760px;top:930px;z-index:20"><div data-hf-id="hf-ngmy" class="term-in"><b data-hf-id="hf-wr21">veil-verify</b><span data-hf-id="hf-ach2">the game’s own Rust, compiled to WebAssembly</span></div></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#s17-cam0", {scale:1.25, x:192.0, y:-81.0, transformOrigin:"50% 50%"}, {scale:1.45, x:222.7, y:-94.0, transformOrigin:"50% 50%", duration:0.90, ease:"power3.inOut"}, 0.050);
+    tl.fromTo("#s17-cam0", {scale:1.45}, {scale:1.515, duration:4.698, ease:"none", immediateRender:false}, 0.950);
+    tl.fromTo("#s17-term0 .term-in", {opacity:0, scale:1.08}, {opacity:1, scale:1, duration:.28, ease:"back.out(2)"}, 3.059);
+    window.__timelines["s17"] = tl;
+  </script>
+</template>

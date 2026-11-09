@@ -1,0 +1,33 @@
+<template>
+  <style>
+@font-face { font-family: 'Cinzel'; font-weight: 700 800; src: url('assets/fonts/Cinzel-latin.woff2') format('woff2'); }
+#root { position: absolute; inset: 0; overflow: hidden; background: #17122b; font-family: Inter, sans-serif; color: #efe6d6; }
+.shot { position: absolute; inset: 0; overflow: hidden; }
+.cam { position: absolute; inset: 0; will-change: transform; }
+.cam img { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; }
+.dim { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 70% at 50% 45%, rgba(23,18,43,0) 30%, rgba(23,18,43,.55) 100%); }
+.term { position: absolute; transform: translate(-50%, -50%); }
+.term-in { background: rgba(28,21,52,.94); border: 1.5px solid rgba(255,217,138,.55); border-radius: 14px; padding: 16px 26px 18px; text-align: center; box-shadow: 0 18px 40px rgba(8,5,20,.45); }
+.term-in b { display: block; font: 800 44px/1.05 'Cinzel', serif; color: #ffd98a; letter-spacing: .02em; }
+.term-in span { display: block; margin-top: 8px; font: 600 30px/1.25 Inter, sans-serif; color: #efe6d6; }
+.title { position: absolute; left: 0; right: 0; bottom: 96px; text-align: center; }
+.title-in { display: inline-block; background: rgba(23,18,43,.9); border-radius: 18px; padding: 22px 44px 26px; border: 1.5px solid rgba(255,217,138,.5); }
+.title-in b { display: block; font: 800 78px/1 'Cinzel', serif; color: #ffd98a; letter-spacing: .02em; }
+.title-in span { display: block; margin-top: 12px; font: 600 30px/1.25 Inter, sans-serif; color: #efe6d6; }
+
+.pane{position:absolute;inset:0;overflow:hidden} .pane img{position:absolute;left:0;top:0;width:1920px;height:1080px;object-fit:cover} .word{position:absolute;bottom:110px;font:800 84px/1 Cinzel,serif;color:#ffd98a;letter-spacing:.05em;text-shadow:0 6px 30px rgba(23,18,43,.8)}
+  </style>
+  <div data-hf-id="hf-8s4s" id="root" data-composition-id="s19" data-width="1920" data-height="1080" data-layout-allow-overlap data-layout-allow-occlusion>
+        <div data-hf-id="hf-cdg8" id="s19-a" class="clip pane" data-start="0" data-duration="6.018" style="z-index:1"><img data-hf-id="hf-xjwf" src="assets/shots/05-board-fog.png" alt="" style="transform:scale(1.25);transform-origin:40% 40%"></div>
+    <div data-hf-id="hf-9w9w" id="s19-b" class="clip pane" data-start="1.992" data-duration="4.026" style="z-index:2"><img data-hf-id="hf-er34" id="s19-bi" src="assets/shots/15-reveal-verified.png" alt="" style="transform:scale(1.35);transform-origin:42% 56%"></div>
+    <div data-hf-id="hf-cqis" id="s19-hw" class="clip word" data-start="0.499" data-duration="5.519" style="right:150px;z-index:5">HIDDEN</div>
+    <div data-hf-id="hf-iyw7" id="s19-pw" class="clip word" data-start="1.992" data-duration="4.026" style="left:150px;z-index:5">PROVABLE</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#s19-b", {clipPath:"inset(0 100% 0 0)"}, {clipPath:"inset(0 50% 0 0)", duration:.7, ease:"power3.inOut"}, 1.992);
+    tl.fromTo("#s19-hw", {opacity:0, scale:1.15}, {opacity:1, scale:1, duration:.3}, 0.499);
+    tl.fromTo("#s19-pw", {opacity:0, scale:1.15}, {opacity:1, scale:1, duration:.3}, 1.992);
+    window.__timelines["s19"] = tl;
+  </script>
+</template>

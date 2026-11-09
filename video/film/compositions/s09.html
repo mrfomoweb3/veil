@@ -1,0 +1,35 @@
+<template>
+  <style>
+@font-face { font-family: 'Cinzel'; font-weight: 700 800; src: url('assets/fonts/Cinzel-latin.woff2') format('woff2'); }
+#root { position: absolute; inset: 0; overflow: hidden; background: #17122b; font-family: Inter, sans-serif; color: #efe6d6; }
+.shot { position: absolute; inset: 0; overflow: hidden; }
+.cam { position: absolute; inset: 0; will-change: transform; }
+.cam img { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; }
+.dim { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 70% at 50% 45%, rgba(23,18,43,0) 30%, rgba(23,18,43,.55) 100%); }
+.term { position: absolute; transform: translate(-50%, -50%); }
+.term-in { background: rgba(28,21,52,.94); border: 1.5px solid rgba(255,217,138,.55); border-radius: 14px; padding: 16px 26px 18px; text-align: center; box-shadow: 0 18px 40px rgba(8,5,20,.45); }
+.term-in b { display: block; font: 800 44px/1.05 'Cinzel', serif; color: #ffd98a; letter-spacing: .02em; }
+.term-in span { display: block; margin-top: 8px; font: 600 30px/1.25 Inter, sans-serif; color: #efe6d6; }
+.title { position: absolute; left: 0; right: 0; bottom: 96px; text-align: center; }
+.title-in { display: inline-block; background: rgba(23,18,43,.9); border-radius: 18px; padding: 22px 44px 26px; border: 1.5px solid rgba(255,217,138,.5); }
+.title-in b { display: block; font: 800 78px/1 'Cinzel', serif; color: #ffd98a; letter-spacing: .02em; }
+.title-in span { display: block; margin-top: 12px; font: 600 30px/1.25 Inter, sans-serif; color: #efe6d6; }
+
+.wax{position:absolute;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe7a8,#e0a948 55%,#a8742a);box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 0 8px rgba(255,255,255,.18);display:grid;place-items:center;font:800 64px/1 Cinzel,serif;color:#5a3a10}
+  </style>
+  <div data-hf-id="hf-hy7h" id="root" data-composition-id="s09" data-width="1920" data-height="1080" data-layout-allow-overlap data-layout-allow-occlusion>
+        <div data-hf-id="hf-7fcz" id="s09-shot0" class="shot clip" data-start="0.0" data-duration="7.764"><div data-hf-id="hf-eu1z" id="s09-cam0" class="cam"><img data-hf-id="hf-dor3" src="assets/shots/06-orders-march.png" alt=""></div><div data-hf-id="hf-y8te" class="dim"></div></div>
+    <div data-hf-id="hf-ps33" id="s09-term0" class="term clip" data-start="4.125" data-duration="3.639" style="left:1240px;top:520px;z-index:20"><div data-hf-id="hf-ngmy" class="term-in"><b data-hf-id="hf-83x7">Sealed in your browser</b><span data-hf-id="hf-dszv">X25519 + XChaCha20, to the enclave’s key</span></div></div>
+    <div data-hf-id="hf-otmb" id="s09-wax" class="clip" data-start="4.125" data-duration="3.639" style="position:absolute;left:330px;top:640px;z-index:12"><div data-hf-id="hf-8cli" class="wax" id="s09-w">V</div></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#s09-cam0", {scale:1.5, x:480.0, y:81.0, transformOrigin:"50% 50%"}, {scale:1.9, x:620.2, y:102.6, transformOrigin:"50% 50%", duration:0.90, ease:"power3.inOut"}, 0.050);
+    tl.fromTo("#s09-cam0", {scale:2.2, x:1152.0, y:475.2, transformOrigin:"50% 50%"}, {scale:2.4, x:1344.0, y:518.4, transformOrigin:"50% 50%", duration:0.75, ease:"power3.inOut", immediateRender:false}, 1.081);
+    tl.fromTo("#s09-cam0", {scale:2.3, x:1248.0, y:-695.5, transformOrigin:"50% 50%"}, {scale:2.5, x:1440.0, y:-756.0, transformOrigin:"50% 50%", duration:0.90, ease:"power3.inOut", immediateRender:false}, 1.935);
+    tl.fromTo("#s09-cam0", {scale:2.5}, {scale:2.612, duration:4.929, ease:"none", immediateRender:false}, 2.835);
+    tl.fromTo("#s09-term0 .term-in", {opacity:0, scale:1.08}, {opacity:1, scale:1, duration:.28, ease:"back.out(2)"}, 4.125);
+    tl.fromTo("#s09-w", {scale:2.2, opacity:0, rotate:-25}, {scale:1, opacity:1, rotate:0, duration:.32, ease:"power4.in"}, 4.125);
+    window.__timelines["s09"] = tl;
+  </script>
+</template>

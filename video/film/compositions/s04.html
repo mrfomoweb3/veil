@@ -1,0 +1,37 @@
+<template>
+  <style>
+@font-face { font-family: 'Cinzel'; font-weight: 700 800; src: url('assets/fonts/Cinzel-latin.woff2') format('woff2'); }
+#root { position: absolute; inset: 0; overflow: hidden; background: #17122b; font-family: Inter, sans-serif; color: #efe6d6; }
+.shot { position: absolute; inset: 0; overflow: hidden; }
+.cam { position: absolute; inset: 0; will-change: transform; }
+.cam img { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; }
+.dim { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 70% at 50% 45%, rgba(23,18,43,0) 30%, rgba(23,18,43,.55) 100%); }
+.term { position: absolute; transform: translate(-50%, -50%); }
+.term-in { background: rgba(28,21,52,.94); border: 1.5px solid rgba(255,217,138,.55); border-radius: 14px; padding: 16px 26px 18px; text-align: center; box-shadow: 0 18px 40px rgba(8,5,20,.45); }
+.term-in b { display: block; font: 800 44px/1.05 'Cinzel', serif; color: #ffd98a; letter-spacing: .02em; }
+.term-in span { display: block; margin-top: 8px; font: 600 30px/1.25 Inter, sans-serif; color: #efe6d6; }
+.title { position: absolute; left: 0; right: 0; bottom: 96px; text-align: center; }
+.title-in { display: inline-block; background: rgba(23,18,43,.9); border-radius: 18px; padding: 22px 44px 26px; border: 1.5px solid rgba(255,217,138,.5); }
+.title-in b { display: block; font: 800 78px/1 'Cinzel', serif; color: #ffd98a; letter-spacing: .02em; }
+.title-in span { display: block; margin-top: 12px; font: 600 30px/1.25 Inter, sans-serif; color: #efe6d6; }
+
+.secret{position:absolute;left:150px;font:800 118px/1 Cinzel,serif;color:#ffd98a;letter-spacing:.02em;text-shadow:0 6px 30px rgba(23,18,43,.6)} .shade{position:absolute;inset:0;background:rgba(23,18,43,.55)}
+  </style>
+  <div data-hf-id="hf-kz0e" id="root" data-composition-id="s04" data-width="1920" data-height="1080" data-layout-allow-overlap data-layout-allow-occlusion>
+        <div data-hf-id="hf-6m3k" id="s04-shot0" class="shot clip" data-start="0.0" data-duration="9.988"><div data-hf-id="hf-7xzs" id="s04-cam0" class="cam"><img data-hf-id="hf-zg5g" src="assets/shots/05-board-fog.png" alt=""></div><div data-hf-id="hf-y8te" class="dim"></div></div>
+    <div data-hf-id="hf-tyvb" id="s04-shade" class="clip shade" data-start="2.803" data-duration="7.185" style="z-index:4"></div>
+    <div data-hf-id="hf-yrzd" id="s04-w0" class="clip secret" data-start="6.685" data-duration="3.303" style="top:300px;z-index:6"><span data-hf-id="hf-5z2o">Cards</span></div>
+    <div data-hf-id="hf-cmbo" id="s04-w1" class="clip secret" data-start="7.411" data-duration="2.577" style="top:470px;z-index:6"><span data-hf-id="hf-finz">Auctions</span></div>
+    <div data-hf-id="hf-cszu" id="s04-w2" class="clip secret" data-start="8.264" data-duration="1.724" style="top:640px;z-index:6"><span data-hf-id="hf-yhxf">Sealed bids</span></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#s04-cam0", {scale:1.6, x:-491.5, y:311.0, transformOrigin:"50% 50%"}, {scale:1.75, x:-537.6, y:340.2, transformOrigin:"50% 50%", duration:0.90, ease:"power3.inOut"}, 0.050);
+    tl.fromTo("#s04-cam0", {scale:1.75}, {scale:1.829, duration:9.038, ease:"none", immediateRender:false}, 0.950);
+    tl.fromTo("#s04-shade", {opacity:0}, {opacity:1, duration:.5}, 2.803);
+    tl.fromTo("#s04-w0 span", {opacity:0, x:-40}, {opacity:1, x:0, duration:.32, ease:"power3.out"}, 6.685);
+    tl.fromTo("#s04-w1 span", {opacity:0, x:-40}, {opacity:1, x:0, duration:.32, ease:"power3.out"}, 7.411);
+    tl.fromTo("#s04-w2 span", {opacity:0, x:-40}, {opacity:1, x:0, duration:.32, ease:"power3.out"}, 8.264);
+    window.__timelines["s04"] = tl;
+  </script>
+</template>

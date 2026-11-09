@@ -1,0 +1,2251 @@
+{
+  "tts_provider": "heygen",
+  "voice_id": "a3a4aa242aaf431ea8ec2c4b3bb332fa",
+  "bgm": {
+    "path": "assets/bgm/track.mp3",
+    "volume": 0.12,
+    "query": "epic driving cinematic trailer, pulsing hybrid percussion, tense building synth ostinato, 120 bpm, gripping",
+    "mode": "retrieve",
+    "duration_s": 24
+  },
+  "bgm_pending": false,
+  "bgm_provider": "heygen",
+  "bgm_pid": null,
+  "bgm_log": null,
+  "bgm_mode": "retrieve",
+  "bgm_target_duration_s": null,
+  "bgm_seed_duration_s": null,
+  "bgm_loop_count": null,
+  "voices": [
+    {
+      "id": "s01",
+      "path": "assets/voice/s01.wav",
+      "duration_s": 6.687,
+      "words": [
+        {
+          "id": "w0",
+          "text": "In",
+          "start": 0.256,
+          "end": 0.427
+        },
+        {
+          "id": "w1",
+          "text": "an",
+          "start": 0.469,
+          "end": 0.512
+        },
+        {
+          "id": "w2",
+          "text": "online",
+          "start": 0.555,
+          "end": 0.725
+        },
+        {
+          "id": "w3",
+          "text": "strategy",
+          "start": 1.024,
+          "end": 1.365
+        },
+        {
+          "id": "w4",
+          "text": "game,",
+          "start": 1.493,
+          "end": 1.877
+        },
+        {
+          "id": "w5",
+          "text": "the",
+          "start": 2.091,
+          "end": 2.176
+        },
+        {
+          "id": "w6",
+          "text": "server",
+          "start": 2.219,
+          "end": 2.517
+        },
+        {
+          "id": "w7",
+          "text": "sees",
+          "start": 2.56,
+          "end": 2.816
+        },
+        {
+          "id": "w8",
+          "text": "the",
+          "start": 2.901,
+          "end": 2.9867
+        },
+        {
+          "id": "w9",
+          "text": "whole",
+          "start": 3.029,
+          "end": 3.2427
+        },
+        {
+          "id": "w10",
+          "text": "map.",
+          "start": 3.285,
+          "end": 3.947
+        },
+        {
+          "id": "w11",
+          "text": "On",
+          "start": 4.395,
+          "end": 4.48
+        },
+        {
+          "id": "w12",
+          "text": "a",
+          "start": 4.523,
+          "end": 4.565
+        },
+        {
+          "id": "w13",
+          "text": "public",
+          "start": 4.608,
+          "end": 4.736
+        },
+        {
+          "id": "w14",
+          "text": "blockchain,",
+          "start": 4.907,
+          "end": 5.568
+        },
+        {
+          "id": "w15",
+          "text": "everyone",
+          "start": 5.76,
+          "end": 5.973
+        },
+        {
+          "id": "w16",
+          "text": "does.",
+          "start": 6.144,
+          "end": 6.449569160997733
+        }
+      ]
+    },
+    {
+      "id": "s02",
+      "path": "assets/voice/s02.wav",
+      "duration_s": 4.101,
+      "words": [
+        {
+          "id": "w0",
+          "text": "So",
+          "start": 0.341,
+          "end": 0.469
+        },
+        {
+          "id": "w1",
+          "text": "you",
+          "start": 0.512,
+          "end": 0.597
+        },
+        {
+          "id": "w2",
+          "text": "either",
+          "start": 0.64,
+          "end": 0.725
+        },
+        {
+          "id": "w3",
+          "text": "trust",
+          "start": 0.853,
+          "end": 1.152
+        },
+        {
+          "id": "w4",
+          "text": "whoever",
+          "start": 1.28,
+          "end": 1.493
+        },
+        {
+          "id": "w5",
+          "text": "runs",
+          "start": 1.579,
+          "end": 1.749
+        },
+        {
+          "id": "w6",
+          "text": "the",
+          "start": 1.835,
+          "end": 1.877
+        },
+        {
+          "id": "w7",
+          "text": "game,",
+          "start": 1.92,
+          "end": 2.261
+        },
+        {
+          "id": "w8",
+          "text": "or",
+          "start": 2.389,
+          "end": 2.773
+        },
+        {
+          "id": "w9",
+          "text": "you",
+          "start": 2.816,
+          "end": 2.944
+        },
+        {
+          "id": "w10",
+          "text": "keep",
+          "start": 2.987,
+          "end": 3.1147
+        },
+        {
+          "id": "w11",
+          "text": "no",
+          "start": 3.2,
+          "end": 3.285
+        },
+        {
+          "id": "w12",
+          "text": "secrets.",
+          "start": 3.328,
+          "end": 3.860544217687075
+        }
+      ]
+    },
+    {
+      "id": "s03",
+      "path": "assets/voice/s03.wav",
+      "duration_s": 7.314,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Veil",
+          "start": 0.299,
+          "end": 0.5547
+        },
+        {
+          "id": "w1",
+          "text": "is",
+          "start": 0.725,
+          "end": 0.768
+        },
+        {
+          "id": "w2",
+          "text": "a",
+          "start": 0.811,
+          "end": 0.896
+        },
+        {
+          "id": "w3",
+          "text": "third",
+          "start": 0.939,
+          "end": 1.152
+        },
+        {
+          "id": "w4",
+          "text": "way:",
+          "start": 1.237,
+          "end": 1.685
+        },
+        {
+          "id": "w5",
+          "text": "a",
+          "start": 1.963,
+          "end": 2.048
+        },
+        {
+          "id": "w6",
+          "text": "war",
+          "start": 2.091,
+          "end": 2.304
+        },
+        {
+          "id": "w7",
+          "text": "in",
+          "start": 2.389,
+          "end": 2.475
+        },
+        {
+          "id": "w8",
+          "text": "the",
+          "start": 2.517,
+          "end": 2.56
+        },
+        {
+          "id": "w9",
+          "text": "clouds",
+          "start": 2.603,
+          "end": 2.944
+        },
+        {
+          "id": "w10",
+          "text": "where",
+          "start": 3.072,
+          "end": 3.2
+        },
+        {
+          "id": "w11",
+          "text": "nobody",
+          "start": 3.243,
+          "end": 3.413
+        },
+        {
+          "id": "w12",
+          "text": "can",
+          "start": 3.584,
+          "end": 3.669
+        },
+        {
+          "id": "w13",
+          "text": "see",
+          "start": 3.712,
+          "end": 3.8827
+        },
+        {
+          "id": "w14",
+          "text": "the",
+          "start": 3.925,
+          "end": 4.0107
+        },
+        {
+          "id": "w15",
+          "text": "map.",
+          "start": 4.053,
+          "end": 4.501
+        },
+        {
+          "id": "w16",
+          "text": "Not",
+          "start": 4.821,
+          "end": 4.949
+        },
+        {
+          "id": "w17",
+          "text": "the",
+          "start": 4.992,
+          "end": 5.077
+        },
+        {
+          "id": "w18",
+          "text": "players.",
+          "start": 5.12,
+          "end": 5.888
+        },
+        {
+          "id": "w19",
+          "text": "Not",
+          "start": 6.485,
+          "end": 6.613
+        },
+        {
+          "id": "w20",
+          "text": "even",
+          "start": 6.656,
+          "end": 6.6987
+        },
+        {
+          "id": "w21",
+          "text": "me.",
+          "start": 6.827,
+          "end": 7.088
+        }
+      ]
+    },
+    {
+      "id": "s04",
+      "path": "assets/voice/s04.wav",
+      "duration_s": 9.038,
+      "words": [
+        {
+          "id": "w0",
+          "text": "The",
+          "start": 0.341,
+          "end": 0.4267
+        },
+        {
+          "id": "w1",
+          "text": "game",
+          "start": 0.469,
+          "end": 0.64
+        },
+        {
+          "id": "w2",
+          "text": "is",
+          "start": 0.853,
+          "end": 0.981
+        },
+        {
+          "id": "w3",
+          "text": "the",
+          "start": 1.024,
+          "end": 1.152
+        },
+        {
+          "id": "w4",
+          "text": "demonstration.",
+          "start": 1.195,
+          "end": 2.155
+        },
+        {
+          "id": "w5",
+          "text": "Anything",
+          "start": 2.603,
+          "end": 3.2427
+        },
+        {
+          "id": "w6",
+          "text": "that",
+          "start": 3.285,
+          "end": 3.3707
+        },
+        {
+          "id": "w7",
+          "text": "needs",
+          "start": 3.413,
+          "end": 3.584
+        },
+        {
+          "id": "w8",
+          "text": "a",
+          "start": 3.669,
+          "end": 3.712
+        },
+        {
+          "id": "w9",
+          "text": "secret",
+          "start": 3.755,
+          "end": 3.968
+        },
+        {
+          "id": "w10",
+          "text": "on",
+          "start": 4.139,
+          "end": 4.267
+        },
+        {
+          "id": "w11",
+          "text": "a",
+          "start": 4.309,
+          "end": 4.352
+        },
+        {
+          "id": "w12",
+          "text": "public",
+          "start": 4.395,
+          "end": 4.5227
+        },
+        {
+          "id": "w13",
+          "text": "chain",
+          "start": 4.693,
+          "end": 4.9067
+        },
+        {
+          "id": "w14",
+          "text": "works",
+          "start": 5.12,
+          "end": 5.2907
+        },
+        {
+          "id": "w15",
+          "text": "the",
+          "start": 5.419,
+          "end": 5.504
+        },
+        {
+          "id": "w16",
+          "text": "same",
+          "start": 5.547,
+          "end": 5.76
+        },
+        {
+          "id": "w17",
+          "text": "way:",
+          "start": 5.803,
+          "end": 6.229
+        },
+        {
+          "id": "w18",
+          "text": "cards,",
+          "start": 6.485,
+          "end": 6.976
+        },
+        {
+          "id": "w19",
+          "text": "auctions,",
+          "start": 7.211,
+          "end": 7.787
+        },
+        {
+          "id": "w20",
+          "text": "sealed",
+          "start": 8.064,
+          "end": 8.3627
+        },
+        {
+          "id": "w21",
+          "text": "bids.",
+          "start": 8.491,
+          "end": 8.794784580498867
+        }
+      ]
+    },
+    {
+      "id": "s05",
+      "path": "assets/voice/s05.wav",
+      "duration_s": 7.027,
+      "words": [
+        {
+          "id": "w0",
+          "text": "I",
+          "start": 0.256,
+          "end": 0.4267
+        },
+        {
+          "id": "w1",
+          "text": "open",
+          "start": 0.469,
+          "end": 0.5547
+        },
+        {
+          "id": "w2",
+          "text": "the",
+          "start": 0.683,
+          "end": 0.768
+        },
+        {
+          "id": "w3",
+          "text": "link.",
+          "start": 0.811,
+          "end": 1.173
+        },
+        {
+          "id": "w4",
+          "text": "No",
+          "start": 1.408,
+          "end": 1.5787
+        },
+        {
+          "id": "w5",
+          "text": "wallet,",
+          "start": 1.621,
+          "end": 2.112
+        },
+        {
+          "id": "w6",
+          "text": "no",
+          "start": 2.261,
+          "end": 2.389
+        },
+        {
+          "id": "w7",
+          "text": "sign-up.",
+          "start": 2.432,
+          "end": 3.307
+        },
+        {
+          "id": "w8",
+          "text": "A",
+          "start": 3.797,
+          "end": 3.8827
+        },
+        {
+          "id": "w9",
+          "text": "relayer",
+          "start": 3.925,
+          "end": 4.309
+        },
+        {
+          "id": "w10",
+          "text": "creates",
+          "start": 4.395,
+          "end": 4.693
+        },
+        {
+          "id": "w11",
+          "text": "my",
+          "start": 4.779,
+          "end": 4.9067
+        },
+        {
+          "id": "w12",
+          "text": "NEAR",
+          "start": 4.949,
+          "end": 5.1627
+        },
+        {
+          "id": "w13",
+          "text": "account",
+          "start": 5.291,
+          "end": 5.504
+        },
+        {
+          "id": "w14",
+          "text": "and",
+          "start": 5.632,
+          "end": 5.6747
+        },
+        {
+          "id": "w15",
+          "text": "pays",
+          "start": 5.717,
+          "end": 5.973
+        },
+        {
+          "id": "w16",
+          "text": "every",
+          "start": 6.101,
+          "end": 6.3147
+        },
+        {
+          "id": "w17",
+          "text": "fee.",
+          "start": 6.485,
+          "end": 6.786
+        }
+      ]
+    },
+    {
+      "id": "s06",
+      "path": "assets/voice/s06.wav",
+      "duration_s": 6.87,
+      "words": [
+        {
+          "id": "w0",
+          "text": "I",
+          "start": 0.299,
+          "end": 0.4267
+        },
+        {
+          "id": "w1",
+          "text": "open",
+          "start": 0.469,
+          "end": 0.5547
+        },
+        {
+          "id": "w2",
+          "text": "a",
+          "start": 0.683,
+          "end": 0.725
+        },
+        {
+          "id": "w3",
+          "text": "lobby",
+          "start": 0.768,
+          "end": 1.024
+        },
+        {
+          "id": "w4",
+          "text": "and",
+          "start": 1.152,
+          "end": 1.1947
+        },
+        {
+          "id": "w5",
+          "text": "send",
+          "start": 1.237,
+          "end": 1.408
+        },
+        {
+          "id": "w6",
+          "text": "a",
+          "start": 1.493,
+          "end": 1.536
+        },
+        {
+          "id": "w7",
+          "text": "friend",
+          "start": 1.579,
+          "end": 1.792
+        },
+        {
+          "id": "w8",
+          "text": "one",
+          "start": 1.92,
+          "end": 2.0907
+        },
+        {
+          "id": "w9",
+          "text": "link.",
+          "start": 2.176,
+          "end": 2.987
+        },
+        {
+          "id": "w10",
+          "text": "When",
+          "start": 3.627,
+          "end": 3.7547
+        },
+        {
+          "id": "w11",
+          "text": "every",
+          "start": 3.797,
+          "end": 3.925
+        },
+        {
+          "id": "w12",
+          "text": "seat",
+          "start": 4.053,
+          "end": 4.267
+        },
+        {
+          "id": "w13",
+          "text": "is",
+          "start": 4.309,
+          "end": 4.352
+        },
+        {
+          "id": "w14",
+          "text": "taken,",
+          "start": 4.395,
+          "end": 4.864
+        },
+        {
+          "id": "w15",
+          "text": "the",
+          "start": 5.12,
+          "end": 5.205
+        },
+        {
+          "id": "w16",
+          "text": "war",
+          "start": 5.248,
+          "end": 5.461
+        },
+        {
+          "id": "w17",
+          "text": "starts",
+          "start": 5.589,
+          "end": 5.845
+        },
+        {
+          "id": "w18",
+          "text": "by",
+          "start": 5.973,
+          "end": 6.101
+        },
+        {
+          "id": "w19",
+          "text": "itself.",
+          "start": 6.144,
+          "end": 6.623718820861678
+        }
+      ]
+    },
+    {
+      "id": "s07",
+      "path": "assets/voice/s07.wav",
+      "duration_s": 5.329,
+      "words": [
+        {
+          "id": "w0",
+          "text": "I",
+          "start": 0.256,
+          "end": 0.384
+        },
+        {
+          "id": "w1",
+          "text": "see",
+          "start": 0.427,
+          "end": 0.5547
+        },
+        {
+          "id": "w2",
+          "text": "my",
+          "start": 0.597,
+          "end": 0.725
+        },
+        {
+          "id": "w3",
+          "text": "capital",
+          "start": 0.768,
+          "end": 1.0667
+        },
+        {
+          "id": "w4",
+          "text": "and",
+          "start": 1.28,
+          "end": 1.5787
+        },
+        {
+          "id": "w5",
+          "text": "nothing",
+          "start": 1.621,
+          "end": 1.792
+        },
+        {
+          "id": "w6",
+          "text": "else.",
+          "start": 1.963,
+          "end": 2.539
+        },
+        {
+          "id": "w7",
+          "text": "The",
+          "start": 2.987,
+          "end": 3.072
+        },
+        {
+          "id": "w8",
+          "text": "real",
+          "start": 3.115,
+          "end": 3.285
+        },
+        {
+          "id": "w9",
+          "text": "map",
+          "start": 3.371,
+          "end": 3.584
+        },
+        {
+          "id": "w10",
+          "text": "lives",
+          "start": 3.669,
+          "end": 3.84
+        },
+        {
+          "id": "w11",
+          "text": "where",
+          "start": 4.053,
+          "end": 4.181
+        },
+        {
+          "id": "w12",
+          "text": "nobody",
+          "start": 4.224,
+          "end": 4.437
+        },
+        {
+          "id": "w13",
+          "text": "can",
+          "start": 4.651,
+          "end": 4.7787
+        },
+        {
+          "id": "w14",
+          "text": "look.",
+          "start": 4.821,
+          "end": 5.091
+        }
+      ]
+    },
+    {
+      "id": "s08",
+      "path": "assets/voice/s08.wav",
+      "duration_s": 7.184,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Inside",
+          "start": 0.256,
+          "end": 0.6827
+        },
+        {
+          "id": "w1",
+          "text": "an",
+          "start": 0.768,
+          "end": 0.8107
+        },
+        {
+          "id": "w2",
+          "text": "OutLayer",
+          "start": 0.853,
+          "end": 1.3227
+        },
+        {
+          "id": "w3",
+          "text": "enclave:",
+          "start": 1.365,
+          "end": 2.048
+        },
+        {
+          "id": "w4",
+          "text": "Intel",
+          "start": 2.219,
+          "end": 2.645
+        },
+        {
+          "id": "w5",
+          "text": "T",
+          "start": 2.731,
+          "end": 2.901
+        },
+        {
+          "id": "w6",
+          "text": "D",
+          "start": 2.987,
+          "end": 3.1147
+        },
+        {
+          "id": "w7",
+          "text": "X",
+          "start": 3.157,
+          "end": 3.328
+        },
+        {
+          "id": "w8",
+          "text": "hardware",
+          "start": 3.456,
+          "end": 3.84
+        },
+        {
+          "id": "w9",
+          "text": "running",
+          "start": 3.968,
+          "end": 4.096
+        },
+        {
+          "id": "w10",
+          "text": "the",
+          "start": 4.224,
+          "end": 4.309
+        },
+        {
+          "id": "w11",
+          "text": "game",
+          "start": 4.352,
+          "end": 4.5227
+        },
+        {
+          "id": "w12",
+          "text": "engine",
+          "start": 4.608,
+          "end": 4.736
+        },
+        {
+          "id": "w13",
+          "text": "in",
+          "start": 4.949,
+          "end": 5.0347
+        },
+        {
+          "id": "w14",
+          "text": "memory",
+          "start": 5.077,
+          "end": 5.333
+        },
+        {
+          "id": "w15",
+          "text": "even",
+          "start": 5.461,
+          "end": 5.632
+        },
+        {
+          "id": "w16",
+          "text": "its",
+          "start": 5.76,
+          "end": 5.8027
+        },
+        {
+          "id": "w17",
+          "text": "operator",
+          "start": 5.888,
+          "end": 6.272
+        },
+        {
+          "id": "w18",
+          "text": "can't",
+          "start": 6.4,
+          "end": 6.5707
+        },
+        {
+          "id": "w19",
+          "text": "read.",
+          "start": 6.656,
+          "end": 6.945532879818594
+        }
+      ]
+    },
+    {
+      "id": "s09",
+      "path": "assets/voice/s09.wav",
+      "duration_s": 7.314,
+      "words": [
+        {
+          "id": "w0",
+          "text": "I",
+          "start": 0.299,
+          "end": 0.384
+        },
+        {
+          "id": "w1",
+          "text": "march,",
+          "start": 0.427,
+          "end": 0.811
+        },
+        {
+          "id": "w2",
+          "text": "recruit,",
+          "start": 0.981,
+          "end": 1.429
+        },
+        {
+          "id": "w3",
+          "text": "and",
+          "start": 1.493,
+          "end": 1.792
+        },
+        {
+          "id": "w4",
+          "text": "seal",
+          "start": 1.835,
+          "end": 2.0907
+        },
+        {
+          "id": "w5",
+          "text": "my",
+          "start": 2.219,
+          "end": 2.3467
+        },
+        {
+          "id": "w6",
+          "text": "orders.",
+          "start": 2.389,
+          "end": 2.987
+        },
+        {
+          "id": "w7",
+          "text": "My",
+          "start": 3.328,
+          "end": 3.456
+        },
+        {
+          "id": "w8",
+          "text": "browser",
+          "start": 3.499,
+          "end": 3.84
+        },
+        {
+          "id": "w9",
+          "text": "encrypts",
+          "start": 3.925,
+          "end": 4.2667
+        },
+        {
+          "id": "w10",
+          "text": "them",
+          "start": 4.352,
+          "end": 4.48
+        },
+        {
+          "id": "w11",
+          "text": "to",
+          "start": 4.523,
+          "end": 4.651
+        },
+        {
+          "id": "w12",
+          "text": "a",
+          "start": 4.693,
+          "end": 4.736
+        },
+        {
+          "id": "w13",
+          "text": "key",
+          "start": 4.779,
+          "end": 4.949
+        },
+        {
+          "id": "w14",
+          "text": "that",
+          "start": 5.077,
+          "end": 5.1627
+        },
+        {
+          "id": "w15",
+          "text": "exists",
+          "start": 5.205,
+          "end": 5.461
+        },
+        {
+          "id": "w16",
+          "text": "only",
+          "start": 5.632,
+          "end": 5.8027
+        },
+        {
+          "id": "w17",
+          "text": "inside",
+          "start": 6.016,
+          "end": 6.101
+        },
+        {
+          "id": "w18",
+          "text": "that",
+          "start": 6.4,
+          "end": 6.528
+        },
+        {
+          "id": "w19",
+          "text": "enclave.",
+          "start": 6.571,
+          "end": 7.088
+        }
+      ]
+    },
+    {
+      "id": "s10",
+      "path": "assets/voice/s10.wav",
+      "duration_s": 6.217,
+      "words": [
+        {
+          "id": "w0",
+          "text": "The",
+          "start": 0.341,
+          "end": 0.469
+        },
+        {
+          "id": "w1",
+          "text": "NEAR",
+          "start": 0.512,
+          "end": 0.6827
+        },
+        {
+          "id": "w2",
+          "text": "contract",
+          "start": 0.725,
+          "end": 0.9387
+        },
+        {
+          "id": "w3",
+          "text": "holds",
+          "start": 1.28,
+          "end": 1.493
+        },
+        {
+          "id": "w4",
+          "text": "the",
+          "start": 1.579,
+          "end": 1.664
+        },
+        {
+          "id": "w5",
+          "text": "ciphertext",
+          "start": 1.707,
+          "end": 2.2187
+        },
+        {
+          "id": "w6",
+          "text": "and",
+          "start": 2.432,
+          "end": 2.6027
+        },
+        {
+          "id": "w7",
+          "text": "keeps",
+          "start": 2.645,
+          "end": 2.8587
+        },
+        {
+          "id": "w8",
+          "text": "the",
+          "start": 2.901,
+          "end": 2.9867
+        },
+        {
+          "id": "w9",
+          "text": "clock.",
+          "start": 3.029,
+          "end": 3.499
+        },
+        {
+          "id": "w10",
+          "text": "Everyone",
+          "start": 3.797,
+          "end": 4.224
+        },
+        {
+          "id": "w11",
+          "text": "sees",
+          "start": 4.267,
+          "end": 4.48
+        },
+        {
+          "id": "w12",
+          "text": "that",
+          "start": 4.565,
+          "end": 4.6507
+        },
+        {
+          "id": "w13",
+          "text": "I",
+          "start": 4.693,
+          "end": 4.7787
+        },
+        {
+          "id": "w14",
+          "text": "sealed,",
+          "start": 4.821,
+          "end": 5.248
+        },
+        {
+          "id": "w15",
+          "text": "never",
+          "start": 5.419,
+          "end": 5.589
+        },
+        {
+          "id": "w16",
+          "text": "what.",
+          "start": 5.675,
+          "end": 5.985
+        }
+      ]
+    },
+    {
+      "id": "s11",
+      "path": "assets/voice/s11.wav",
+      "duration_s": 7.21,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Once",
+          "start": 0.256,
+          "end": 0.469
+        },
+        {
+          "id": "w1",
+          "text": "everyone",
+          "start": 0.512,
+          "end": 0.725
+        },
+        {
+          "id": "w2",
+          "text": "has",
+          "start": 0.853,
+          "end": 0.981
+        },
+        {
+          "id": "w3",
+          "text": "sealed,",
+          "start": 1.024,
+          "end": 1.536
+        },
+        {
+          "id": "w4",
+          "text": "the",
+          "start": 1.792,
+          "end": 1.877
+        },
+        {
+          "id": "w5",
+          "text": "enclave",
+          "start": 1.92,
+          "end": 2.389
+        },
+        {
+          "id": "w6",
+          "text": "opens",
+          "start": 2.475,
+          "end": 2.7307
+        },
+        {
+          "id": "w7",
+          "text": "the",
+          "start": 2.816,
+          "end": 2.901
+        },
+        {
+          "id": "w8",
+          "text": "orders,",
+          "start": 2.944,
+          "end": 3.413
+        },
+        {
+          "id": "w9",
+          "text": "fights",
+          "start": 3.584,
+          "end": 3.797
+        },
+        {
+          "id": "w10",
+          "text": "the",
+          "start": 3.925,
+          "end": 4.0107
+        },
+        {
+          "id": "w11",
+          "text": "battles,",
+          "start": 4.053,
+          "end": 4.459
+        },
+        {
+          "id": "w12",
+          "text": "and",
+          "start": 4.565,
+          "end": 4.821
+        },
+        {
+          "id": "w13",
+          "text": "sends",
+          "start": 4.864,
+          "end": 5.077
+        },
+        {
+          "id": "w14",
+          "text": "each",
+          "start": 5.163,
+          "end": 5.376
+        },
+        {
+          "id": "w15",
+          "text": "player",
+          "start": 5.504,
+          "end": 5.717
+        },
+        {
+          "id": "w16",
+          "text": "only",
+          "start": 5.845,
+          "end": 6.0587
+        },
+        {
+          "id": "w17",
+          "text": "their",
+          "start": 6.229,
+          "end": 6.357
+        },
+        {
+          "id": "w18",
+          "text": "own",
+          "start": 6.4,
+          "end": 6.5707
+        },
+        {
+          "id": "w19",
+          "text": "view.",
+          "start": 6.656,
+          "end": 6.96
+        }
+      ]
+    },
+    {
+      "id": "s12",
+      "path": "assets/voice/s12.wav",
+      "duration_s": 6.766,
+      "words": [
+        {
+          "id": "w0",
+          "text": "The",
+          "start": 0.341,
+          "end": 0.4267
+        },
+        {
+          "id": "w1",
+          "text": "dice",
+          "start": 0.469,
+          "end": 0.64
+        },
+        {
+          "id": "w2",
+          "text": "come",
+          "start": 0.768,
+          "end": 0.9387
+        },
+        {
+          "id": "w3",
+          "text": "from",
+          "start": 0.981,
+          "end": 1.109
+        },
+        {
+          "id": "w4",
+          "text": "a",
+          "start": 1.152,
+          "end": 1.1947
+        },
+        {
+          "id": "w5",
+          "text": "verifiable",
+          "start": 1.237,
+          "end": 1.792
+        },
+        {
+          "id": "w6",
+          "text": "random",
+          "start": 1.963,
+          "end": 2.261
+        },
+        {
+          "id": "w7",
+          "text": "function.",
+          "start": 2.347,
+          "end": 2.816
+        },
+        {
+          "id": "w8",
+          "text": "The",
+          "start": 3.115,
+          "end": 3.2
+        },
+        {
+          "id": "w9",
+          "text": "contract",
+          "start": 3.243,
+          "end": 3.413
+        },
+        {
+          "id": "w10",
+          "text": "checks",
+          "start": 3.84,
+          "end": 4.096
+        },
+        {
+          "id": "w11",
+          "text": "every",
+          "start": 4.224,
+          "end": 4.437
+        },
+        {
+          "id": "w12",
+          "text": "roll's",
+          "start": 4.565,
+          "end": 4.864
+        },
+        {
+          "id": "w13",
+          "text": "proof",
+          "start": 4.907,
+          "end": 5.1627
+        },
+        {
+          "id": "w14",
+          "text": "before",
+          "start": 5.291,
+          "end": 5.376
+        },
+        {
+          "id": "w15",
+          "text": "it",
+          "start": 5.589,
+          "end": 5.6747
+        },
+        {
+          "id": "w16",
+          "text": "accepts",
+          "start": 5.717,
+          "end": 5.973
+        },
+        {
+          "id": "w17",
+          "text": "the",
+          "start": 6.059,
+          "end": 6.144
+        },
+        {
+          "id": "w18",
+          "text": "turn.",
+          "start": 6.187,
+          "end": 6.530839002267574
+        }
+      ]
+    },
+    {
+      "id": "s13",
+      "path": "assets/voice/s13.wav",
+      "duration_s": 5.799,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Empty",
+          "start": 0.299,
+          "end": 0.5547
+        },
+        {
+          "id": "w1",
+          "text": "seats",
+          "start": 0.597,
+          "end": 0.8107
+        },
+        {
+          "id": "w2",
+          "text": "go",
+          "start": 0.939,
+          "end": 1.024
+        },
+        {
+          "id": "w3",
+          "text": "to",
+          "start": 1.067,
+          "end": 1.152
+        },
+        {
+          "id": "w4",
+          "text": "AI",
+          "start": 1.195,
+          "end": 1.4507
+        },
+        {
+          "id": "w5",
+          "text": "warlords.",
+          "start": 1.536,
+          "end": 2.219
+        },
+        {
+          "id": "w6",
+          "text": "They",
+          "start": 2.432,
+          "end": 2.56
+        },
+        {
+          "id": "w7",
+          "text": "decide",
+          "start": 2.603,
+          "end": 2.7307
+        },
+        {
+          "id": "w8",
+          "text": "inside",
+          "start": 2.901,
+          "end": 3.029
+        },
+        {
+          "id": "w9",
+          "text": "the",
+          "start": 3.243,
+          "end": 3.328
+        },
+        {
+          "id": "w10",
+          "text": "enclave",
+          "start": 3.371,
+          "end": 3.7547
+        },
+        {
+          "id": "w11",
+          "text": "too,",
+          "start": 3.883,
+          "end": 4.181
+        },
+        {
+          "id": "w12",
+          "text": "from",
+          "start": 4.309,
+          "end": 4.437
+        },
+        {
+          "id": "w13",
+          "text": "their",
+          "start": 4.48,
+          "end": 4.565
+        },
+        {
+          "id": "w14",
+          "text": "own",
+          "start": 4.651,
+          "end": 4.736
+        },
+        {
+          "id": "w15",
+          "text": "fog",
+          "start": 4.864,
+          "end": 5.12
+        },
+        {
+          "id": "w16",
+          "text": "only.",
+          "start": 5.205,
+          "end": 5.550702947845805
+        }
+      ]
+    },
+    {
+      "id": "s14",
+      "path": "assets/voice/s14.wav",
+      "duration_s": 6.165,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Each",
+          "start": 0.256,
+          "end": 0.469
+        },
+        {
+          "id": "w1",
+          "text": "has",
+          "start": 0.555,
+          "end": 0.6827
+        },
+        {
+          "id": "w2",
+          "text": "its",
+          "start": 0.725,
+          "end": 0.8107
+        },
+        {
+          "id": "w3",
+          "text": "own",
+          "start": 0.896,
+          "end": 1.024
+        },
+        {
+          "id": "w4",
+          "text": "wallet",
+          "start": 1.109,
+          "end": 1.493
+        },
+        {
+          "id": "w5",
+          "text": "and",
+          "start": 1.579,
+          "end": 1.8347
+        },
+        {
+          "id": "w6",
+          "text": "trades",
+          "start": 1.877,
+          "end": 2.2187
+        },
+        {
+          "id": "w7",
+          "text": "what",
+          "start": 2.347,
+          "end": 2.432
+        },
+        {
+          "id": "w8",
+          "text": "it",
+          "start": 2.475,
+          "end": 2.56
+        },
+        {
+          "id": "w9",
+          "text": "knows.",
+          "start": 2.603,
+          "end": 3.221
+        },
+        {
+          "id": "w10",
+          "text": "I",
+          "start": 3.712,
+          "end": 3.84
+        },
+        {
+          "id": "w11",
+          "text": "buy",
+          "start": 3.883,
+          "end": 4.0107
+        },
+        {
+          "id": "w12",
+          "text": "intel",
+          "start": 4.096,
+          "end": 4.48
+        },
+        {
+          "id": "w13",
+          "text": "on",
+          "start": 4.608,
+          "end": 4.651
+        },
+        {
+          "id": "w14",
+          "text": "an",
+          "start": 4.693,
+          "end": 4.736
+        },
+        {
+          "id": "w15",
+          "text": "island",
+          "start": 4.821,
+          "end": 5.12
+        },
+        {
+          "id": "w16",
+          "text": "under",
+          "start": 5.205,
+          "end": 5.2907
+        },
+        {
+          "id": "w17",
+          "text": "my",
+          "start": 5.376,
+          "end": 5.504
+        },
+        {
+          "id": "w18",
+          "text": "cloud.",
+          "start": 5.547,
+          "end": 5.938730158730158
+        }
+      ]
+    },
+    {
+      "id": "s15",
+      "path": "assets/voice/s15.wav",
+      "duration_s": 6.949,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Or",
+          "start": 0.256,
+          "end": 0.4267
+        },
+        {
+          "id": "w1",
+          "text": "a",
+          "start": 0.469,
+          "end": 0.512
+        },
+        {
+          "id": "w2",
+          "text": "truce,",
+          "start": 0.555,
+          "end": 1.131
+        },
+        {
+          "id": "w3",
+          "text": "so",
+          "start": 1.408,
+          "end": 1.536
+        },
+        {
+          "id": "w4",
+          "text": "it",
+          "start": 1.579,
+          "end": 1.621
+        },
+        {
+          "id": "w5",
+          "text": "holds",
+          "start": 1.664,
+          "end": 1.8347
+        },
+        {
+          "id": "w6",
+          "text": "back.",
+          "start": 1.92,
+          "end": 2.667
+        },
+        {
+          "id": "w7",
+          "text": "Prices",
+          "start": 3.243,
+          "end": 3.456
+        },
+        {
+          "id": "w8",
+          "text": "change",
+          "start": 3.669,
+          "end": 3.925
+        },
+        {
+          "id": "w9",
+          "text": "every",
+          "start": 4.096,
+          "end": 4.309
+        },
+        {
+          "id": "w10",
+          "text": "turn,",
+          "start": 4.395,
+          "end": 4.864
+        },
+        {
+          "id": "w11",
+          "text": "and",
+          "start": 5.12,
+          "end": 5.248
+        },
+        {
+          "id": "w12",
+          "text": "every",
+          "start": 5.291,
+          "end": 5.4187
+        },
+        {
+          "id": "w13",
+          "text": "trade",
+          "start": 5.504,
+          "end": 5.717
+        },
+        {
+          "id": "w14",
+          "text": "is",
+          "start": 5.888,
+          "end": 5.9307
+        },
+        {
+          "id": "w15",
+          "text": "part",
+          "start": 5.973,
+          "end": 6.144
+        },
+        {
+          "id": "w16",
+          "text": "of",
+          "start": 6.187,
+          "end": 6.229
+        },
+        {
+          "id": "w17",
+          "text": "the",
+          "start": 6.272,
+          "end": 6.3147
+        },
+        {
+          "id": "w18",
+          "text": "rules.",
+          "start": 6.357,
+          "end": 6.70498866213152
+        }
+      ]
+    },
+    {
+      "id": "s16",
+      "path": "assets/voice/s16.wav",
+      "duration_s": 6.74,
+      "words": [
+        {
+          "id": "w0",
+          "text": "When",
+          "start": 0.299,
+          "end": 0.469
+        },
+        {
+          "id": "w1",
+          "text": "the",
+          "start": 0.512,
+          "end": 0.5547
+        },
+        {
+          "id": "w2",
+          "text": "war",
+          "start": 0.597,
+          "end": 0.725
+        },
+        {
+          "id": "w3",
+          "text": "ends,",
+          "start": 0.811,
+          "end": 1.216
+        },
+        {
+          "id": "w4",
+          "text": "the",
+          "start": 1.451,
+          "end": 1.536
+        },
+        {
+          "id": "w5",
+          "text": "enclave",
+          "start": 1.579,
+          "end": 2.048
+        },
+        {
+          "id": "w6",
+          "text": "publishes",
+          "start": 2.176,
+          "end": 2.6027
+        },
+        {
+          "id": "w7",
+          "text": "everything",
+          "start": 2.645,
+          "end": 3.115
+        },
+        {
+          "id": "w8",
+          "text": "it",
+          "start": 3.157,
+          "end": 3.2
+        },
+        {
+          "id": "w9",
+          "text": "hid:",
+          "start": 3.243,
+          "end": 3.648
+        },
+        {
+          "id": "w10",
+          "text": "every",
+          "start": 3.883,
+          "end": 4.053
+        },
+        {
+          "id": "w11",
+          "text": "order,",
+          "start": 4.181,
+          "end": 4.608
+        },
+        {
+          "id": "w12",
+          "text": "every",
+          "start": 4.821,
+          "end": 4.992
+        },
+        {
+          "id": "w13",
+          "text": "roll,",
+          "start": 5.077,
+          "end": 5.525
+        },
+        {
+          "id": "w14",
+          "text": "and",
+          "start": 5.76,
+          "end": 5.803
+        },
+        {
+          "id": "w15",
+          "text": "the",
+          "start": 5.845,
+          "end": 5.9307
+        },
+        {
+          "id": "w16",
+          "text": "match",
+          "start": 5.973,
+          "end": 6.144
+        },
+        {
+          "id": "w17",
+          "text": "key.",
+          "start": 6.272,
+          "end": 6.496
+        }
+      ]
+    },
+    {
+      "id": "s17",
+      "path": "assets/voice/s17.wav",
+      "duration_s": 5.198,
+      "words": [
+        {
+          "id": "w0",
+          "text": "My",
+          "start": 0.299,
+          "end": 0.4267
+        },
+        {
+          "id": "w1",
+          "text": "browser",
+          "start": 0.469,
+          "end": 0.8107
+        },
+        {
+          "id": "w2",
+          "text": "re-runs",
+          "start": 0.896,
+          "end": 1.365
+        },
+        {
+          "id": "w3",
+          "text": "the",
+          "start": 1.451,
+          "end": 1.536
+        },
+        {
+          "id": "w4",
+          "text": "whole",
+          "start": 1.579,
+          "end": 1.749
+        },
+        {
+          "id": "w5",
+          "text": "match",
+          "start": 1.835,
+          "end": 2.0907
+        },
+        {
+          "id": "w6",
+          "text": "with",
+          "start": 2.219,
+          "end": 2.304
+        },
+        {
+          "id": "w7",
+          "text": "the",
+          "start": 2.347,
+          "end": 2.432
+        },
+        {
+          "id": "w8",
+          "text": "same",
+          "start": 2.475,
+          "end": 2.7307
+        },
+        {
+          "id": "w9",
+          "text": "Rust",
+          "start": 2.859,
+          "end": 3.029
+        },
+        {
+          "id": "w10",
+          "text": "code",
+          "start": 3.157,
+          "end": 3.3707
+        },
+        {
+          "id": "w11",
+          "text": "and",
+          "start": 3.499,
+          "end": 3.797
+        },
+        {
+          "id": "w12",
+          "text": "checks",
+          "start": 3.84,
+          "end": 4.096
+        },
+        {
+          "id": "w13",
+          "text": "it",
+          "start": 4.139,
+          "end": 4.181
+        },
+        {
+          "id": "w14",
+          "text": "against",
+          "start": 4.267,
+          "end": 4.3947
+        },
+        {
+          "id": "w15",
+          "text": "the",
+          "start": 4.48,
+          "end": 4.565
+        },
+        {
+          "id": "w16",
+          "text": "chain.",
+          "start": 4.608,
+          "end": 4.963
+        }
+      ]
+    },
+    {
+      "id": "s18",
+      "path": "assets/voice/s18.wav",
+      "duration_s": 1.019,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Verified.",
+          "start": 0.299,
+          "end": 0.986
+        }
+      ]
+    },
+    {
+      "id": "s19",
+      "path": "assets/voice/s19.wav",
+      "duration_s": 5.068,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Hidden",
+          "start": 0.299,
+          "end": 0.597
+        },
+        {
+          "id": "w1",
+          "text": "while",
+          "start": 0.683,
+          "end": 0.811
+        },
+        {
+          "id": "w2",
+          "text": "you",
+          "start": 0.853,
+          "end": 0.981
+        },
+        {
+          "id": "w3",
+          "text": "play.",
+          "start": 1.024,
+          "end": 1.515
+        },
+        {
+          "id": "w4",
+          "text": "Provable",
+          "start": 1.792,
+          "end": 2.133
+        },
+        {
+          "id": "w5",
+          "text": "when",
+          "start": 2.261,
+          "end": 2.389
+        },
+        {
+          "id": "w6",
+          "text": "it",
+          "start": 2.432,
+          "end": 2.4747
+        },
+        {
+          "id": "w7",
+          "text": "ends.",
+          "start": 2.517,
+          "end": 3.072
+        },
+        {
+          "id": "w8",
+          "text": "That's",
+          "start": 3.456,
+          "end": 3.669
+        },
+        {
+          "id": "w9",
+          "text": "what",
+          "start": 3.712,
+          "end": 3.84
+        },
+        {
+          "id": "w10",
+          "text": "Veil",
+          "start": 3.883,
+          "end": 4.053
+        },
+        {
+          "id": "w11",
+          "text": "is",
+          "start": 4.181,
+          "end": 4.267
+        },
+        {
+          "id": "w12",
+          "text": "here",
+          "start": 4.309,
+          "end": 4.395
+        },
+        {
+          "id": "w13",
+          "text": "to",
+          "start": 4.437,
+          "end": 4.5227
+        },
+        {
+          "id": "w14",
+          "text": "show.",
+          "start": 4.565,
+          "end": 4.83578231292517
+        }
+      ]
+    },
+    {
+      "id": "s20",
+      "path": "assets/voice/s20.wav",
+      "duration_s": 8.307,
+      "words": [
+        {
+          "id": "w0",
+          "text": "Winnings",
+          "start": 0.256,
+          "end": 0.64
+        },
+        {
+          "id": "w1",
+          "text": "get",
+          "start": 0.725,
+          "end": 0.811
+        },
+        {
+          "id": "w2",
+          "text": "the",
+          "start": 0.853,
+          "end": 0.9387
+        },
+        {
+          "id": "w3",
+          "text": "same",
+          "start": 0.981,
+          "end": 1.152
+        },
+        {
+          "id": "w4",
+          "text": "care.",
+          "start": 1.28,
+          "end": 1.984
+        },
+        {
+          "id": "w5",
+          "text": "Through",
+          "start": 2.517,
+          "end": 2.7307
+        },
+        {
+          "id": "w6",
+          "text": "Chain",
+          "start": 2.773,
+          "end": 2.9867
+        },
+        {
+          "id": "w7",
+          "text": "Signatures,",
+          "start": 3.072,
+          "end": 3.776
+        },
+        {
+          "id": "w8",
+          "text": "my",
+          "start": 3.968,
+          "end": 4.1387
+        },
+        {
+          "id": "w9",
+          "text": "NEAR",
+          "start": 4.181,
+          "end": 4.3947
+        },
+        {
+          "id": "w10",
+          "text": "account",
+          "start": 4.523,
+          "end": 4.736
+        },
+        {
+          "id": "w11",
+          "text": "controls",
+          "start": 4.821,
+          "end": 5.1627
+        },
+        {
+          "id": "w12",
+          "text": "an",
+          "start": 5.248,
+          "end": 5.333
+        },
+        {
+          "id": "w13",
+          "text": "address",
+          "start": 5.461,
+          "end": 5.717
+        },
+        {
+          "id": "w14",
+          "text": "on",
+          "start": 5.845,
+          "end": 5.9307
+        },
+        {
+          "id": "w15",
+          "text": "Base:",
+          "start": 6.016,
+          "end": 6.613
+        },
+        {
+          "id": "w16",
+          "text": "no",
+          "start": 7.04,
+          "end": 7.253
+        },
+        {
+          "id": "w17",
+          "text": "second",
+          "start": 7.339,
+          "end": 7.552
+        },
+        {
+          "id": "w18",
+          "text": "wallet.",
+          "start": 7.723,
+          "end": 8.074965986394558
+        }
+      ]
+    }
+  ],
+  "sfx": [],
+  "total_duration_s": 126.302
+}

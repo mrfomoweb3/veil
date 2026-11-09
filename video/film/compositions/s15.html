@@ -1,0 +1,32 @@
+<template>
+  <style>
+@font-face { font-family: 'Cinzel'; font-weight: 700 800; src: url('assets/fonts/Cinzel-latin.woff2') format('woff2'); }
+#root { position: absolute; inset: 0; overflow: hidden; background: #17122b; font-family: Inter, sans-serif; color: #efe6d6; }
+.shot { position: absolute; inset: 0; overflow: hidden; }
+.cam { position: absolute; inset: 0; will-change: transform; }
+.cam img { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; }
+.dim { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 70% at 50% 45%, rgba(23,18,43,0) 30%, rgba(23,18,43,.55) 100%); }
+.term { position: absolute; transform: translate(-50%, -50%); }
+.term-in { background: rgba(28,21,52,.94); border: 1.5px solid rgba(255,217,138,.55); border-radius: 14px; padding: 16px 26px 18px; text-align: center; box-shadow: 0 18px 40px rgba(8,5,20,.45); }
+.term-in b { display: block; font: 800 44px/1.05 'Cinzel', serif; color: #ffd98a; letter-spacing: .02em; }
+.term-in span { display: block; margin-top: 8px; font: 600 30px/1.25 Inter, sans-serif; color: #efe6d6; }
+.title { position: absolute; left: 0; right: 0; bottom: 96px; text-align: center; }
+.title-in { display: inline-block; background: rgba(23,18,43,.9); border-radius: 18px; padding: 22px 44px 26px; border: 1.5px solid rgba(255,217,138,.5); }
+.title-in b { display: block; font: 800 78px/1 'Cinzel', serif; color: #ffd98a; letter-spacing: .02em; }
+.title-in span { display: block; margin-top: 12px; font: 600 30px/1.25 Inter, sans-serif; color: #efe6d6; }
+
+
+  </style>
+  <div data-hf-id="hf-am68" id="root" data-composition-id="s15" data-width="1920" data-height="1080" data-layout-allow-overlap data-layout-allow-occlusion>
+        <div data-hf-id="hf-n4k3" id="s15-shot0" class="shot clip" data-start="0.0" data-duration="3.293"><div data-hf-id="hf-vobe" id="s15-cam0" class="cam"><img data-hf-id="hf-kyvc" src="assets/shots/13-feed-truce.png" alt=""></div><div data-hf-id="hf-y8te" class="dim"></div></div>
+    <div data-hf-id="hf-hl2c" id="s15-shot1" class="shot clip" data-start="3.293" data-duration="4.606"><div data-hf-id="hf-zmff" id="s15-cam1" class="cam"><img data-hf-id="hf-33kv" src="assets/shots/12b-market-truce.png" alt=""></div><div data-hf-id="hf-cphi" class="dim"></div></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#s15-cam0", {scale:2.6, x:-1536.0, y:864.0, transformOrigin:"50% 50%"}, {scale:2.8, x:-1728.0, y:972.0, transformOrigin:"50% 50%", duration:0.90, ease:"power3.inOut"}, 0.050);
+    tl.fromTo("#s15-cam0", {scale:2.8}, {scale:2.926, duration:2.343, ease:"none", immediateRender:false}, 0.950);
+    tl.fromTo("#s15-cam1", {scale:2.0, x:960.0, y:0.0, transformOrigin:"50% 50%"}, {scale:2.2, x:1152.0, y:0.0, transformOrigin:"50% 50%", duration:0.90, ease:"power3.inOut"}, 3.343);
+    tl.fromTo("#s15-cam1", {scale:2.2}, {scale:2.299, duration:3.656, ease:"none", immediateRender:false}, 4.243);
+    window.__timelines["s15"] = tl;
+  </script>
+</template>
