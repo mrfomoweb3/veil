@@ -10,7 +10,7 @@ export function endpointRefused(e: unknown): boolean {
   const err = e as { cause?: unknown; message?: string } | null;
   const status = typeof err?.cause === 'number' ? err.cause : null;
   if (status != null && [401, 402, 403, 404, 405, 429, 500, 502, 503, 504].includes(status)) return true;
-  return /-429|\b429\b|Rate limits exceeded|Too Many Requests|UNAUTHORIZED|Unauthorized|Forbidden|invalid api key|FetchError|Failed to fetch|fetch failed|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up|Exceeded \d+ attempts/i.test(err?.message ?? '');
+  return /-429|\b429\b|Rate limits exceeded|Too Many Requests|UNAUTHORIZED|Unauthorized|Forbidden|invalid api key|FetchError|Failed to fetch|fetch failed|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up|Exceeded \d+ attempts|Request timeout on the free plan|upgrade to paid plan/i.test(err?.message ?? '');
 }
 
 const DEFAULTS: Record<'testnet' | 'mainnet', string[]> = {

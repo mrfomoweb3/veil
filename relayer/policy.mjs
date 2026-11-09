@@ -57,14 +57,17 @@ export class RateLimit {
 
 /**
  * Whether an RPC error means "this endpoint refused or could not take the request", so the same
- * request may go to the next endpoint. A refused request never ran, and re-sending the same
- * signed transaction elsewhere is harmless (the chain dedupes it by hash). Anything the chain
- * itself answered (InvalidNonce, a contract panic) is not a refusal and must not move.
+ * request may go to the next endpoint. Rotation happens below near-api-js, so the next endpoint
+ * gets the same bytes: a query, or the same signed transaction, which the chain dedupes by hash,
+ * so even one the first endpoint did forward cannot run twice (the next endpoint returns its
+ * outcome). dRPC's free plan is the case in point: it cuts off any request that waits for a
+ * transaction to execute. Anything the chain itself answered (InvalidNonce, a contract panic)
+ * is not a refusal and must not move.
  */
 export function endpointRefused(e) {
   const status = typeof e?.cause === 'number' ? e.cause : null;
   if (status != null && [401, 402, 403, 404, 405, 429, 500, 502, 503, 504].includes(status)) return true;
-  return /-429|\b429\b|Rate limits exceeded|Too Many Requests|UNAUTHORIZED|Unauthorized|Forbidden|invalid api key|FetchError|Failed to fetch|fetch failed|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up|Exceeded \d+ attempts/i.test(e?.message ?? '');
+  return /-429|\b429\b|Rate limits exceeded|Too Many Requests|UNAUTHORIZED|Unauthorized|Forbidden|invalid api key|FetchError|Failed to fetch|fetch failed|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up|Exceeded \d+ attempts|Request timeout on the free plan|upgrade to paid plan/i.test(e?.message ?? '');
 }
 
 /** An endpoint for logs: scheme and host only, so a key in the path or query never lands in a log. */

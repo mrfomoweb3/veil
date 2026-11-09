@@ -54,7 +54,8 @@ test('an RPC that refuses moves on; an answer from the chain does not', () => {
   assert.ok(endpointRefused(err('request to https://x failed, reason: getaddrinfo ENOTFOUND x')));
   assert.ok(!endpointRefused(err('InvalidNonce: tx nonce 5 must be larger than 7')));
   assert.ok(!endpointRefused(err('Smart contract panicked: turn still open')));
-  assert.ok(!endpointRefused(err('Request timeout on the free plan, please upgrade to paid plan')));
+  // dRPC's free plan cuts off waits for execution; the same signed bytes go to the next endpoint.
+  assert.ok(endpointRefused(err('{"error":{"message":"Request timeout on the free plan, please upgrade to paid plan","code":30}}')));
 });
 
 test('logs name the host only', () => {

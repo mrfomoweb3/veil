@@ -41,7 +41,7 @@ describe('RotatingProvider', () => {
   it('tells refusals from answers', () => {
     expect(endpointRefused(Object.assign(new Error('bad gateway'), { cause: 502 }))).toBe(true);
     expect(endpointRefused(new Error('Smart contract panicked: turn still open'))).toBe(false);
-    expect(endpointRefused(new Error('Request timeout on the free plan'))).toBe(false);
+    expect(endpointRefused(new Error('Request timeout on the free plan, please upgrade to paid plan'))).toBe(true);
   });
 
   it('gives up with the last 429 when every endpoint is limited', async () => {
