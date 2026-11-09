@@ -77,8 +77,9 @@ export function startFocusManager() {
       }
       const others = all.filter((e) => e !== active).map((el) => ({ el, r: el.getBoundingClientRect() }));
       nearest(active!.getBoundingClientRect(), a.dir, others)?.focus();
-    } else if (a.type === 'select' && uiHasFocus() && st.mode === 'gamepad') {
-      // (Keyboard Enter already clicks the focused button natively.)
+    } else if (a.type === 'select' && uiHasFocus()) {
+      // Pad A/Cross and keyboard Enter/Space both land here. The keyboard handler cancels the
+      // browser's own Enter/Space click (so nothing fires twice), so this is the one click.
       active?.click();
     } else if (a.type === 'back' && uiHasFocus() && st.boardActive) {
       active?.blur();
