@@ -173,8 +173,8 @@ export async function sendOrders() {
       await chain.call('submit_orders', { match_id: match.id, turn: match.turn, ct_b64: toB64(ct) });
       break;
     } catch (e) {
-      const msg = (e as Error).message ?? '';
-      if (attempt >= 3 || !/429|Rate limit|timeout|timed out|Failed to fetch/i.test(msg)) { play('error'); throw e; }
+      const transient = (e as { transient?: boolean }).transient ?? /429|Rate limit|timeout|timed out|Failed to fetch/i.test((e as Error).message ?? '');
+      if (attempt >= 3 || !transient) { play('error'); throw e; }
       await new Promise((r) => setTimeout(r, 1500 * attempt));
     }
   }

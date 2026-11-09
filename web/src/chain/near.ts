@@ -11,6 +11,7 @@ import { Account, Connection, InMemorySigner, KeyPair, keyStores, providers } fr
 import { actionCreators, encodeSignedDelegate } from '@near-js/transactions';
 import type { Chain, VeilEvent } from './types';
 import { RotatingProvider, rpcUrls } from './rpc';
+import { friendlyError } from './errors';
 
 const env = import.meta.env;
 
@@ -187,9 +188,18 @@ export class NearChain implements Chain {
   }
 
   private async relayer<T>(path: string, body: unknown): Promise<T> {
-    const r = await fetch(`${RELAYER}${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    let r: Response;
+    try {
+      r = await fetch(`${RELAYER}${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    } catch (e) {
+      throw friendlyError((e as Error).message ?? 'Failed to fetch');
+    }
     const j = await r.json().catch(() => ({ error: `relayer HTTP ${r.status}` }));
-    if (!r.ok || j.error) throw new Error(j.error ?? `relayer HTTP ${r.status}`);
+    if (!r.ok || j.error) {
+      const raw = String(j.error ?? `relayer HTTP ${r.status}`);
+      console.warn('relayer', path, raw);
+      throw friendlyError(raw);
+    }
     return j.result as T;
   }
 
