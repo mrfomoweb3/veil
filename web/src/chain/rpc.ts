@@ -1,12 +1,20 @@
-// Free NEAR RPCs rate-limit (429) per IP. A player polls the match every few seconds, so a
-// throttled endpoint would freeze their game. This provider stays on one endpoint and moves to
-// the next only on a 429, which means the request was refused, never run.
+// Free NEAR RPCs rate-limit (429) per IP, and any endpoint can be down or misconfigured. A player
+// polls the match every few seconds, so one bad endpoint would freeze their game. This provider
+// stays on one endpoint and moves to the next only when it refuses a request (never run).
 import { providers } from 'near-api-js';
 
-const RATE_LIMITED = /-429|\b429\b|Rate limits exceeded|Too Many Requests/i;
+/** "This endpoint refused or couldn't take the request": safe to send the same request elsewhere
+ *  (it never ran; a re-sent signed transaction is deduped by hash). Answers from the chain itself,
+ *  like InvalidNonce or a contract panic, are not refusals. Mirrors relayer/policy.mjs. */
+export function endpointRefused(e: unknown): boolean {
+  const err = e as { cause?: unknown; message?: string } | null;
+  const status = typeof err?.cause === 'number' ? err.cause : null;
+  if (status != null && [401, 402, 403, 404, 405, 429, 500, 502, 503, 504].includes(status)) return true;
+  return /-429|\b429\b|Rate limits exceeded|Too Many Requests|UNAUTHORIZED|Unauthorized|Forbidden|invalid api key|FetchError|Failed to fetch|fetch failed|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up|Exceeded \d+ attempts/i.test(err?.message ?? '');
+}
 
 const DEFAULTS: Record<'testnet' | 'mainnet', string[]> = {
-  testnet: ['https://rpc.testnet.fastnear.com', 'https://near-testnet.drpc.org', 'https://test.rpc.fastnear.com', 'https://rpc.testnet.near.org'],
+  testnet: ['https://rpc.testnet.fastnear.com', 'https://near-testnet.drpc.org', 'https://testnet-rpc.intea.rs', 'https://test.rpc.fastnear.com', 'https://rpc.testnet.near.org'],
   mainnet: ['https://rpc.mainnet.fastnear.com', 'https://near.drpc.org', 'https://rpc.mainnet.near.org'],
 };
 
@@ -33,7 +41,7 @@ export class RotatingProvider extends providers.JsonRpcProvider {
         this.at = i;
         return r;
       } catch (e) {
-        if (!RATE_LIMITED.test((e as Error)?.message ?? '')) throw e;
+        if (!endpointRefused(e)) throw e;
         last = e;
       }
     }

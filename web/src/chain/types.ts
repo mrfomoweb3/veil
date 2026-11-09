@@ -28,6 +28,8 @@ export interface Chain {
   onEvent(cb: (e: VeilEvent) => void): () => void;
   /** OutLayer public storage (The Reveal). */
   publicStorage(key: string): Promise<Uint8Array | null>;
+  /** The relayer's push stream for one match (Server-Sent Events), if this network has one. */
+  watchUrl?(matchId: number): string | null;
   /** NEP-413 signature over the fixed vault message; the private-vault key is derived from it. */
   signVaultMessage?(): Promise<Uint8Array>;
   /** NEAR Chain Signatures: the MPC network signs a 32-byte hash for this account's derived key. */

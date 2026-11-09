@@ -54,6 +54,10 @@ export class NearChain implements Chain {
     return chain;
   }
 
+  watchUrl(matchId: number) {
+    return `${RELAYER}/watch?match=${matchId}&account=${encodeURIComponent(this.account)}`;
+  }
+
   async signVaultMessage() {
     const { vaultMessageHash } = await import('../privacy/nep413');
     return this.keyPair.sign(vaultMessageHash()).signature;

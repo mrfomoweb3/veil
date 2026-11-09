@@ -26,25 +26,16 @@ export function seatName(m: Match | null, i: number, me?: string) {
   return twin >= 0 ? `${name} ${i + 1}` : name;
 }
 
-async function refresh() {
+// Two ways in, one way through: polling (`refresh`) and the relayer's push stream (`useMatchSync`)
+// both hand what they read to the apply* functions below.
+
+/** A newer copy of the match. */
+export function applyMatch(match: Match) {
   const st = useStore.getState();
-  const { chain, matchId } = st;
-  if (!chain || matchId == null) return;
-  const match = await chain.view<Match | null>('get_match', { match_id: matchId });
-  if (!match) return;
+  const { chain } = st;
+  if (!chain || match.id !== st.matchId) return;
   const prev = st.match;
   useStore.setState({ match });
-  const seatedMe = match.seats.some((s) => s.account === chain.account);
-
-  // Who has sealed this turn (never what): shown next to each player.
-  if (match.status === 'Running' && seatedMe) {
-    chain.view<string[]>('get_submitted', { match_id: matchId }).then((sealedBy) => {
-      const was = useStore.getState().sealedBy;
-      if (useStore.getState().match?.turn !== match.turn) return;
-      useStore.setState({ sealedBy });
-      if (sealedBy.some((a) => a !== chain.account && !was.includes(a))) play('tick');
-    }).catch(() => {});
-  }
 
   // The turn went into the enclave. From here the draft is the plan for the next turn; the
   // sealed orders stay on the board until the result arrives.
@@ -59,23 +50,34 @@ async function refresh() {
     });
   }
   if (prev && ['Running', 'Resolving'].includes(prev.status) && match.status === 'Finished') play('end');
+}
 
-  // Public history (append only).
-  if (st.history.length < match.turn + 1 || (prev && prev.status !== match.status)) {
-    const more = await chain.view<PublicTurnRaw[]>('get_history', { match_id: matchId, from: st.history.length, limit: 60 });
-    if (more.length) {
-      const history = [...useStore.getState().history, ...more];
-      const facts: PublicFacts[] = history.map((h) => JSON.parse(h.public));
-      useStore.setState({ history, facts });
-      for (const f of facts.slice(st.history.length)) announce(f, match, chain.account);
-    }
-  }
+/** Who has sealed this turn (never what): shown next to each player. */
+export function applySubmitted(sealedBy: string[], turn: number) {
+  const { chain, match, sealedBy: was } = useStore.getState();
+  if (!chain || match?.turn !== turn || match.status !== 'Running') return;
+  if (sealedBy.length === was.length && sealedBy.every((a) => was.includes(a))) return;
+  useStore.setState({ sealedBy });
+  if (sealedBy.some((a) => a !== chain.account && !was.includes(a))) play('tick');
+}
 
-  // My view.
-  const mine = match.seats.find((s) => s.account === chain.account);
-  if (!mine) return;
-  const v = await chain.view<ViewOut | null>('get_view', { match_id: matchId, account: chain.account });
-  if (!v || (st.view && v.turn <= st.view.turn)) return;
+/** Public history, append only: `from` is the index of the first item. */
+export function applyHistory(more: PublicTurnRaw[], from: number) {
+  const st = useStore.getState();
+  const { chain, match } = st;
+  if (!chain || !match || !more.length || from !== st.history.length) return;
+  const history = [...st.history, ...more];
+  const facts: PublicFacts[] = history.map((h) => JSON.parse(h.public));
+  useStore.setState({ history, facts });
+  for (const f of facts.slice(from)) announce(f, match, chain.account);
+}
+
+/** My sealed view for a turn: opened with this browser's key. */
+export function applyView(v: ViewOut | null) {
+  const st = useStore.getState();
+  const { chain, matchId, match } = st;
+  if (!chain || matchId == null || !match || !v) return;
+  if (st.view && v.turn <= st.view.turn) return;
   const { sk } = viewKey(chain.account);
   let pv;
   try {
@@ -132,6 +134,27 @@ async function refresh() {
   }
 }
 
+/** Polling: reads everything the stream would have pushed. */
+async function refresh() {
+  const st = useStore.getState();
+  const { chain, matchId } = st;
+  if (!chain || matchId == null) return;
+  const match = await chain.view<Match | null>('get_match', { match_id: matchId });
+  if (!match) return;
+  const prev = st.match;
+  applyMatch(match);
+  const seatedMe = match.seats.some((s) => s.account === chain.account);
+  if (match.status === 'Running' && seatedMe) {
+    chain.view<string[]>('get_submitted', { match_id: matchId }).then((x) => applySubmitted(x, match.turn)).catch(() => {});
+  }
+  const have = useStore.getState().history.length;
+  if (have < match.turn + 1 || (prev && prev.status !== match.status)) {
+    applyHistory(await chain.view<PublicTurnRaw[]>('get_history', { match_id: matchId, from: have, limit: 60 }), have);
+  }
+  if (!seatedMe) return;
+  applyView(await chain.view<ViewOut | null>('get_view', { match_id: matchId, account: chain.account }));
+}
+
 function announce(f: PublicFacts, m: Match, me: string) {
   const push = useStore.getState().push;
   if (f.turn === 0) return push('The clouds part over your capital. Everything else is veiled.', 'info', 0);
@@ -148,19 +171,61 @@ export function useMatchSync() {
     if (!chain || matchId == null) return;
     let alive = true;
     let busy = false;
-    const tick = async () => {
-      if (busy || !alive) return;
+    // When the relayer's stream last spoke (data or heartbeat). While it is fresh, polling backs
+    // off to a slow safety net: one stream per match on the relayer replaces every player's polls.
+    let streamAt = 0;
+    const streaming = () => Date.now() - streamAt < 25_000;
+    const tick = async (force = false) => {
+      if (busy || !alive || (!force && streaming())) return;
       busy = true;
       try { await refresh(); } catch (e) { console.warn(e); } finally { busy = false; }
     };
-    tick();
+    tick(true);
     wind(true);
-    // Events trigger a refresh at once; the poll is a fallback. Public RPCs rate-limit, so it's slower off devnet.
-    const t = setInterval(tick, chain.network === 'devnet' ? 1500 : 3000);
+    const t = setInterval(() => tick(), chain.network === 'devnet' ? 1500 : 3000);
+    const safety = setInterval(() => tick(true), 20_000);
     const off = chain.onEvent((e) => {
       const d = e.data[0] as { match?: number };
-      if (d?.match === matchId) tick();
+      if (d?.match === matchId) tick(true);
     });
-    return () => { alive = false; clearInterval(t); off(); wind(false); };
+
+    // Push from the relayer (Server-Sent Events), with reconnects; polling covers any gap.
+    let es: EventSource | null = null;
+    let retry: ReturnType<typeof setTimeout> | null = null;
+    const url = chain.watchUrl?.(matchId);
+    const connect = (delay: number) => {
+      if (!alive || !url || typeof EventSource === 'undefined') return;
+      es = new EventSource(url);
+      const seen = () => { streamAt = Date.now(); };
+      const on = <T,>(name: string, f: (d: T) => void) => es!.addEventListener(name, (ev) => {
+        seen();
+        try { f(JSON.parse((ev as MessageEvent).data) as T); } catch (e) { console.warn('watch', name, e); }
+      });
+      es.addEventListener('ping', seen);
+      on<Match>('match', (m) => applyMatch(m));
+      on<{ turn: number; accounts: string[] }>('submitted', (d) => applySubmitted(d.accounts, d.turn));
+      on<{ from: number; items: PublicTurnRaw[] }>('history', (d) => {
+        if (d.from === useStore.getState().history.length) applyHistory(d.items, d.from);
+        else tick(true); // missed a piece: read it directly
+      });
+      on<ViewOut>('view', (v) => applyView(v));
+      es.onerror = () => {
+        es?.close();
+        es = null;
+        streamAt = 0;
+        retry = setTimeout(() => connect(Math.min(delay * 2, 30_000)), delay);
+      };
+    };
+    connect(2000);
+
+    return () => {
+      alive = false;
+      clearInterval(t);
+      clearInterval(safety);
+      off();
+      es?.close();
+      if (retry) clearTimeout(retry);
+      wind(false);
+    };
   }, [chain, matchId]);
 }

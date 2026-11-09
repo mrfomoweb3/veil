@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { checkDelegate, implicitMatches, RateLimit } from './policy.mjs';
+import { checkDelegate, endpointRefused, hostOf, implicitMatches, RateLimit } from './policy.mjs';
 
 const fc = (methodName, deposit = 0n, gas = 30n * 10n ** 12n) => ({ functionCall: { methodName, args: new Uint8Array(), gas, deposit } });
 const sd = (receiverId, actions) => ({ delegateAction: { senderId: 'a'.repeat(64), receiverId, actions } });
@@ -43,4 +43,20 @@ test('rate limit', () => {
   assert.ok(r.take('x', 0) && r.take('x', 1));
   assert.ok(!r.take('x', 2));
   assert.ok(r.take('x', 61_000));
+});
+
+test('an RPC that refuses moves on; an answer from the chain does not', () => {
+  const err = (message, cause) => Object.assign(new Error(message), cause ? { cause } : {});
+  assert.ok(endpointRefused(err('{"error":"UNAUTHORIZED","instance":"x"}', 401)));
+  assert.ok(endpointRefused(err('{"error":"UNAUTHORIZED"}')));
+  assert.ok(endpointRefused(err('{"code":-429,"message":"Rate limits exceeded"}')));
+  assert.ok(endpointRefused(err('bad gateway', 502)));
+  assert.ok(endpointRefused(err('request to https://x failed, reason: getaddrinfo ENOTFOUND x')));
+  assert.ok(!endpointRefused(err('InvalidNonce: tx nonce 5 must be larger than 7')));
+  assert.ok(!endpointRefused(err('Smart contract panicked: turn still open')));
+  assert.ok(!endpointRefused(err('Request timeout on the free plan, please upgrade to paid plan')));
+});
+
+test('logs name the host only', () => {
+  assert.equal(hostOf('https://abc.near-testnet.quiknode.pro/SECRETTOKEN/?apiKey=K'), 'https://abc.near-testnet.quiknode.pro');
 });

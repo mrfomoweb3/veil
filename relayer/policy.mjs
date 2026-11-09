@@ -54,3 +54,20 @@ export class RateLimit {
     return true;
   }
 }
+
+/**
+ * Whether an RPC error means "this endpoint refused or could not take the request", so the same
+ * request may go to the next endpoint. A refused request never ran, and re-sending the same
+ * signed transaction elsewhere is harmless (the chain dedupes it by hash). Anything the chain
+ * itself answered (InvalidNonce, a contract panic) is not a refusal and must not move.
+ */
+export function endpointRefused(e) {
+  const status = typeof e?.cause === 'number' ? e.cause : null;
+  if (status != null && [401, 402, 403, 404, 405, 429, 500, 502, 503, 504].includes(status)) return true;
+  return /-429|\b429\b|Rate limits exceeded|Too Many Requests|UNAUTHORIZED|Unauthorized|Forbidden|invalid api key|FetchError|Failed to fetch|fetch failed|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up|Exceeded \d+ attempts/i.test(e?.message ?? '');
+}
+
+/** An endpoint for logs: scheme and host only, so a key in the path or query never lands in a log. */
+export function hostOf(url) {
+  try { const u = new URL(url); return `${u.protocol}//${u.host}`; } catch { return '(bad url)'; }
+}

@@ -16,7 +16,7 @@ primary_region = "fra"
   CRANK_EVERY_MS = "5000"
   PORT = "8790"
   # Overridden by the NEAR_RPC secret when you have a keyed RPC.
-  NEAR_RPC = "https://test.rpc.fastnear.com,https://near-testnet.drpc.org,https://rpc.testnet.fastnear.com,https://rpc.testnet.near.org"
+  NEAR_RPC = "https://test.rpc.fastnear.com,https://near-testnet.drpc.org,https://rpc.testnet.fastnear.com,https://testnet-rpc.intea.rs,https://rpc.testnet.near.org"
   # The Vercel production URL (and any preview URL you want to allow), comma-separated.
   ALLOWED_ORIGINS = "https://veil.mrfomolabs.xyz"
 

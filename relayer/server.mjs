@@ -17,7 +17,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { actionCreators, SCHEMA } = require('@near-js/transactions');
 const { deserialize } = require('borsh');
-import { checkDelegate, CRANKABLE, implicitMatches, RateLimit } from './policy.mjs';
+import { checkDelegate, CRANKABLE, endpointRefused, hostOf, implicitMatches, RateLimit } from './policy.mjs';
 
 const env = (k, d) => process.env[k] ?? d ?? (() => { throw new Error(`${k} is required`); })();
 const NETWORK = env('NEAR_NETWORK', 'testnet');
@@ -43,7 +43,6 @@ await store.setKey(NETWORK, RELAYER, KeyPair.fromString(relayerKey()));
 // a 429 means the request was refused, not run, so even a transaction is safe to send again
 // elsewhere. Any other error is passed on unchanged (moving a send after a timeout could
 // double it, and near-api-js's own nonce retry must see InvalidNonce).
-const RATE_LIMITED = /-429|\b429\b|Rate limits exceeded|Too Many Requests/i;
 class RotatingProvider extends providers.JsonRpcProvider {
   constructor(urls) {
     super({ url: urls[0] });
@@ -56,10 +55,11 @@ class RotatingProvider extends providers.JsonRpcProvider {
       const i = (this.at + k) % this.all.length;
       try {
         const r = await this.all[i].sendJsonRpc(method, params);
-        if (i !== this.at) { console.log(`RPC: rate-limited, now on ${this.all[i].connection.url}`); this.at = i; }
+        if (i !== this.at) { console.log(`RPC: now on ${hostOf(this.all[i].connection.url)}`); this.at = i; }
         return r;
       } catch (e) {
-        if (!RATE_LIMITED.test(e?.message ?? '')) throw e;
+        if (!endpointRefused(e)) throw e;
+        console.warn(`RPC: ${hostOf(this.all[i].connection.url)} refused ${method}: ${String(e?.message ?? e).replace(/https?:\/\/\S+/g, '(url)').slice(0, 120)}`);
         last = e;
       }
     }
@@ -185,6 +185,95 @@ async function gloamRelay(raw, ip, res) {
   }
 }
 
+// ---- Push: the relayer reads each watched match from the chain once and streams changes to
+// every browser watching it (Server-Sent Events). However many players and spectators a match
+// has, the chain sees one reader, so a busy evening doesn't trip RPC rate limits, and players
+// see a new turn the moment it lands. Views are sealed to their player; each goes only to the
+// watcher who named that account (and only that player's key opens it anyway).
+const WATCH_EVERY_MS = Number(env('WATCH_EVERY_MS', '1500'));
+const MAX_WATCHERS = Number(env('MAX_WATCHERS', '600'));
+const MAX_WATCHERS_PER_IP = Number(env('MAX_WATCHERS_PER_IP', '8'));
+const watched = new Map(); // match id -> { subs, matchJson, historyLen, status, submittedKey, viewTurn, busy, timer }
+const watchersByIp = new Map();
+let watcherCount = 0;
+const sse = (res, event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+
+async function pollWatched(id, w) {
+  if (w.busy) return;
+  w.busy = true;
+  try {
+    const m = await view('get_match', { match_id: id });
+    if (!m) return;
+    const json = JSON.stringify(m);
+    if (json !== w.matchJson) {
+      w.matchJson = json;
+      for (const sub of w.subs) sse(sub.res, 'match', m);
+    }
+    if (w.historyLen < m.turn + 1 || w.status !== m.status) {
+      const items = await view('get_history', { match_id: id, from: w.historyLen, limit: 60 });
+      if (items?.length) {
+        const from = w.historyLen;
+        w.historyLen += items.length;
+        for (const sub of w.subs) sse(sub.res, 'history', { from, items });
+      }
+    }
+    w.status = m.status;
+    if (m.status === 'Running') {
+      const accounts = await view('get_submitted', { match_id: id });
+      const key = `${m.turn}:${[...accounts].sort().join(',')}`;
+      if (key !== w.submittedKey) {
+        w.submittedKey = key;
+        for (const sub of w.subs) sse(sub.res, 'submitted', { turn: m.turn, accounts });
+      }
+    }
+    const seated = new Set(m.seats.map((x) => x.account));
+    for (const account of new Set([...w.subs].map((x) => x.account).filter((a) => seated.has(a)))) {
+      const v = await view('get_view', { match_id: id, account });
+      if (v && v.turn > (w.viewTurn.get(account) ?? -1)) {
+        w.viewTurn.set(account, v.turn);
+        for (const sub of w.subs) if (sub.account === account) sse(sub.res, 'view', v);
+      }
+    }
+  } catch { /* the next tick tries again; browsers also poll slowly as a safety net */ } finally {
+    w.busy = false;
+  }
+}
+
+function watch(req, res, send) {
+  const q = new URL(req.url, 'http://x').searchParams;
+  const id = Number(q.get('match'));
+  const account = q.get('account') ?? '';
+  if (!Number.isInteger(id) || id < 1 || !/^[a-z0-9._-]{2,64}$/.test(account)) return send(400, { error: 'bad watch request' });
+  const ip = req.headers['fly-client-ip'] ?? req.socket.remoteAddress;
+  if (watcherCount >= MAX_WATCHERS || (watchersByIp.get(ip) ?? 0) >= MAX_WATCHERS_PER_IP) return send(429, { error: 'too many watchers' });
+  res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache, no-transform', connection: 'keep-alive', 'x-accel-buffering': 'no' });
+  res.write('retry: 3000\n\n');
+  let w = watched.get(id);
+  if (!w) {
+    w = { subs: new Set(), matchJson: '', historyLen: 0, status: '', submittedKey: '', viewTurn: new Map(), busy: false, timer: null };
+    w.timer = setInterval(() => pollWatched(id, w), WATCH_EVERY_MS);
+    watched.set(id, w);
+  }
+  const sub = { res, account };
+  w.subs.add(sub);
+  watcherCount++;
+  watchersByIp.set(ip, (watchersByIp.get(ip) ?? 0) + 1);
+  // Catch the newcomer up with what this match's reader already knows.
+  if (w.matchJson) res.write(`event: match\ndata: ${w.matchJson}\n\n`);
+  w.viewTurn.delete(account); // so its current view is sent on the next read
+  pollWatched(id, w);
+  req.on('close', () => {
+    w.subs.delete(sub);
+    watcherCount--;
+    const n = (watchersByIp.get(ip) ?? 1) - 1;
+    if (n > 0) watchersByIp.set(ip, n); else watchersByIp.delete(ip);
+    if (!w.subs.size) { clearInterval(w.timer); watched.delete(id); }
+  });
+}
+
+// Keep streams open through proxies, and let browsers know the stream is alive.
+setInterval(() => { for (const w of watched.values()) for (const sub of w.subs) sse(sub.res, 'ping', {}); }, 15_000);
+
 createServer(async (req, res) => {
   const origin = req.headers.origin;
   if (origin && ORIGINS.includes(origin)) res.setHeader('Access-Control-Allow-Origin', origin);
@@ -194,6 +283,7 @@ createServer(async (req, res) => {
   const path = new URL(req.url, 'http://x').pathname;
   // Liveness for the host (Fly.io checks it); says which network and contract this relayer serves.
   if (path === '/health' && req.method === 'GET') return send(200, { ok: true, network: NETWORK, contract: CONTRACT, relayer: RELAYER });
+  if (path === '/watch' && req.method === 'GET') return watch(req, res, send);
   const h = handlers[path];
   if ((!h && path !== '/gloam-relay') || req.method !== 'POST') return send(404, { error: 'not found' });
   let raw = '';
