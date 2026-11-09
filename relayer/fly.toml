@@ -18,7 +18,7 @@ primary_region = "fra"
   # Overridden by the NEAR_RPC secret when you have a keyed RPC.
   NEAR_RPC = "https://test.rpc.fastnear.com,https://near-testnet.drpc.org,https://rpc.testnet.fastnear.com,https://rpc.testnet.near.org"
   # The Vercel production URL (and any preview URL you want to allow), comma-separated.
-  ALLOWED_ORIGINS = "https://veil-game.vercel.app"
+  ALLOWED_ORIGINS = "https://veil.mrfomolabs.xyz"
 
 [http_service]
   internal_port = 8790
