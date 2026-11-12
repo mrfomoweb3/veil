@@ -12,7 +12,7 @@ Built for the NEAR hackathon. Tracks: **games** (primary), **privacy**, **open**
 
 - **Play now (testnet, free, no wallet):** https://veil.mrfomolabs.xyz
 - **Walkthrough film (2:51):** a full match, narrated, explaining each piece of tech as it appears.
-  > 🎥 Demo video: _add link_
+  > 🎥 Demo video: https://youtu.be/Vpn6Os-3_SE
 
 ![Screenshot](docs/screenshot.png)
 
